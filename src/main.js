@@ -103,8 +103,11 @@ if (document.fonts) {
 
 window.game = new Game();
 
-// Offline support, so the game keeps working on a tablet with no signal.
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+// Offline support, so the game keeps working on a tablet with no signal. The
+// single-file build has nothing to cache - it is already one file - and sets a
+// flag so it does not go looking for a worker that is not there.
+if (!globalThis.__EMI_SINGLE_FILE && 'serviceWorker' in navigator
+    && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => { /* fine without it */ });
   });

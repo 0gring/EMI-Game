@@ -1,11 +1,13 @@
 # Publishes the game to GitHub Pages so it can be opened on a tablet.
-# Enable once under Settings -> Pages -> Source: GitHub Actions.
+#
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions". Nothing else is
+# needed; the next push (or a manual run from the Actions tab) deploys.
 
 name: Deploy to Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/**']
   workflow_dispatch:
 
 permissions:
@@ -27,13 +29,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # There is no build step: the game is plain ES modules, so the repository
-      # is the artifact. Only the tooling is left out.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The game itself has no build step - it is plain ES modules, so the
+      # repository is the site. The only thing built here is the standalone
+      # single-file copy that gets published alongside it.
       - name: Stage the site
         run: |
           mkdir -p _site
           cp -r index.html manifest.webmanifest sw.js src assets _site/
-          echo "Published $(date -u +%FT%TZ)" > _site/build.txt
+          npm ci
+          node tools/bundle.mjs
+          cp dist/emi-world.html _site/emi-world.html
+          echo "Published $(date -u +%FT%TZ) from ${GITHUB_SHA::7}" > _site/build.txt
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

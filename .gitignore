@@ -2,3 +2,4 @@ node_modules/
 tools/shots/
 _site/
 .DS_Store
+dist/

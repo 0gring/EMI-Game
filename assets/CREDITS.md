@@ -50,6 +50,14 @@ Chosen from the `dreamy`, `glass`, `organic`, `rubber`, `soft`, `arcade`,
 Notes that were not sampled are produced by pitch-shifting the nearest
 recorded note, so a handful of files covers three octaves.
 
+**Processing applied here** (`tools/shrink-audio.mjs`, re-runnable): each sample
+is downmixed to mono, trimmed to the longest duration that instrument is ever
+asked to hold (xylophone 2.0s, flute 3.0s, piano 3.5s, harp 4.0s), faded out
+over the last 250ms so the cut is inaudible, and re-encoded as 112kbps mono MP3.
+That took the library from 6.3MB to 1.8MB. The game pans in software and adds
+its own reverb, so neither the stereo image nor the long tails were doing any
+work.
+
 Nothing is streamed as a pre-rendered track: the soundtrack is played live from
 these samples by the sequencer in `src/core/audio.js`, and the animal voices are
 the same samples bent in pitch.

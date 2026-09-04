@@ -26,11 +26,16 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? '  ok  ' : ' FAIL '} ${name}${detail ? ` - ${detail}` : ''}`);
 };
 
+// `--bundle` runs the exact same checks against the single-file build, so the
+// distributed copy is verified rather than assumed.
+const BUNDLE = process.argv.includes('--bundle');
+
 const server = await new Promise((ok) => {
   const s = createServer(async (req, res) => {
     try {
       let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
       if (p === '/') p = '/index.html';
+      if (BUNDLE && p === '/index.html') p = '/dist/emi-world.html';
       const body = await readFile(join(ROOT, p));
       res.writeHead(200, { 'content-type': TYPES[extname(p)] || 'application/octet-stream' });
       res.end(body);
@@ -43,6 +48,8 @@ const browser = await chromium.launch({ headless: true, args: ['--mute-audio', '
 const ctx = await browser.newContext({ viewport: { width: 1100, height: 780 }, deviceScaleFactor: 1, hasTouch: true });
 const page = await ctx.newPage();
 const errors = [];
+const requested = [];
+page.on('request', (r) => requested.push(r.url()));
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g/.test(m.text())) errors.push(m.text()); });
 
@@ -355,6 +362,14 @@ const rotate = await page.evaluate(async () => {
   return out;
 });
 rotate.forEach(([id, r]) => check(`${id} survives a relayout`, r === 'ok', r === 'ok' ? '' : r));
+
+// The whole point of the one-file build is that it needs nothing else. Prove
+// it: the document itself should be the only thing the page ever asks for.
+if (BUNDLE) {
+  const outside = requested.filter((u) => !u.startsWith(`http://127.0.0.1:${PORT}/index.html`));
+  check('the single file fetches nothing else', outside.length === 0,
+    outside.length ? outside.slice(0, 3).join(' | ') : `${requested.length} request`);
+}
 
 check('no console or page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 

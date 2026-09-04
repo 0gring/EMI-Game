@@ -12,6 +12,12 @@
 
 import { clamp, rand, pick } from './util.js';
 
+// The single-file build (tools/bundle.mjs) inlines every sample as a data URI
+// and puts the lookup table here, so the same loader serves both the normal
+// multi-file game and a one-file copy that needs no server at all.
+const resolveAsset = (url) =>
+  (typeof globalThis !== 'undefined' && globalThis.__EMI_ASSETS?.[url]) || url;
+
 const NOTE_OFFSET = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 export function noteToMidi(name) {
@@ -119,7 +125,7 @@ export class AudioBus {
   async _load(url) {
     if (this.pending.has(url)) return this.pending.get(url);
     const p = (async () => {
-      const res = await fetch(url);
+      const res = await fetch(resolveAsset(url));
       if (!res.ok) throw new Error(`audio ${res.status} ${url}`);
       const raw = await res.arrayBuffer();
       return await this.ctx.decodeAudioData(raw);

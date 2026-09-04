@@ -7,6 +7,21 @@ a computer, and keeps working with no signal once it has been opened once.
 Everything is Hebrew and right-to-left. The child needs no reading: the words
 are there for the grown-up and for hearing a name spoken alongside a picture.
 
+## Getting to it
+
+Three ways in, in order of least setup:
+
+1. **One file.** `npm run bundle` produces `dist/emi-world.html` — the whole
+   game, every sample and both fonts inlined, 2.8MB, no server and no network
+   needed. Open it from anywhere, mail it, put it on a USB stick. A test asserts
+   the page makes exactly one request: itself.
+2. **GitHub Pages.** Enable it once under *Settings → Pages → Source: GitHub
+   Actions*. The next push deploys, and the game lives at
+   `https://<user>.github.io/EMI-Game/` with the single-file copy alongside it at
+   `/emi-world.html`. This is the one to add to a tablet's home screen, because
+   the service worker then keeps it working with no signal.
+3. **Locally**, for development — see below.
+
 ## Playing it
 
 **On a computer**, open `index.html` through a local server (a file:// URL
@@ -58,11 +73,15 @@ These are the reasons behind most of the code:
 - **It suggests the next thing.** After a few idle seconds something pulses,
   rustles or peeks.
 - **Sound is real, not synthetic beeps.** See [assets/CREDITS.md](assets/CREDITS.md).
+- **It loads fast.** The whole game, audio included, is 2.7MB. That matters when
+  the tablet is on a phone connection and a two year old is already waiting.
 
 ## How it is built
 
-Plain ES modules, canvas 2D, no framework and no build step. Open the file and
-it runs.
+Plain ES modules and canvas 2D, no framework. The game itself has no build step —
+serve the directory and it runs. The two build tools are optional and their
+output is committed: one trims the audio, the other folds everything into the
+standalone single file.
 
 ```
 index.html              the shell: fonts, full-screen button, feature gate
@@ -79,7 +98,7 @@ src/core/
   state.js              saved stars and stickers
   util.js               easing, springs, small maths
 src/scenes/             title, hub and the six activities
-tools/                  test, verify, profile, icon rendering
+tools/                  test, verify, profile, bundle, audio and icon build
 ```
 
 Two performance decisions carry the frame rate, and both are worth keeping:
@@ -99,12 +118,15 @@ slow frames.
 ## Working on it
 
 ```
-npm start          # local server
-npm test           # 41 functional checks in real Chromium
-npm run verify     # screenshots every scene at four sizes, fails on any error
-node tools/fps-probe.mjs   # per-scene frame rate
-node tools/stress.mjs      # frame rate with the particle pool full
-node tools/make-icons.mjs  # re-render the PNG icons from icon.svg
+npm start            # local server, prints the address to use on a tablet
+npm test             # 41 functional checks in real Chromium
+npm run test:bundle  # the same checks against the single-file build (42)
+npm run verify       # screenshots every scene at four sizes, fails on any error
+npm run bundle       # dist/emi-world.html, the standalone copy
+npm run profile      # per-scene frame rate
+node tools/stress.mjs         # frame rate with the particle pool full
+node tools/make-icons.mjs     # re-render the PNG icons from icon.svg
+node tools/shrink-audio.mjs   # re-trim and re-encode the samples (--write)
 ```
 
 `npm test` drives the actual game — it pops a balloon and asserts a star was
@@ -116,8 +138,7 @@ console error, page error or dropped frame rate.
 
 ## Publishing it
 
-Pushing to the default branch publishes to GitHub Pages via
-`.github/workflows/pages.yml`. Enable it once under *Settings → Pages → Source:
-GitHub Actions*. After that the game is at
-`https://<user>.github.io/EMI-Game/` — open that on the tablet and add it to
-the home screen.
+`.github/workflows/pages.yml` deploys on any push to `main` or a `claude/*`
+branch, and can be run by hand from the Actions tab. It needs GitHub Pages set
+to *Source: GitHub Actions* once, in the repository settings — that is the only
+manual step, and nothing deploys until it is done.
