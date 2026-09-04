@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>עולם של אמי</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="משחק חינוכי וכיפי לגילאי שנה עד שלוש - בלונים, חיות, מוזיקה, צורות, ציור וים.">
+<meta name="theme-color" content="#8fdcff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="עולם של אמי">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/icon-180.png">
+<style>
+  /* Type is self-hosted: both faces cover Hebrew as well as Latin, and the game
+     has to look right on a tablet with no signal. Varela Round is the rounded
+     body face; Secular One is the chunky display face used for the big words.
+     Both are SIL Open Font License, see assets/fonts/. */
+  @font-face {
+    font-family: 'Varela Round';
+    src: url('./assets/fonts/varela-round-hebrew.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+    unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+  }
+  @font-face {
+    font-family: 'Varela Round';
+    src: url('./assets/fonts/varela-round-latin.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+2000-206F, U+2074, U+20AC, U+2212;
+  }
+  @font-face {
+    font-family: 'Secular One';
+    src: url('./assets/fonts/secular-one-hebrew.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+    unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+  }
+  @font-face {
+    font-family: 'Secular One';
+    src: url('./assets/fonts/secular-one-latin.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+2000-206F, U+2074, U+20AC, U+2212;
+  }
+
+  :root { color-scheme: light; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #8fdcff;
+    font-family: 'Varela Round', 'Heebo', system-ui, sans-serif;
+    /* Nothing here should ever be selectable, draggable or highlightable. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+
+  #stage {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+
+  /* Full-screen toggle, deliberately small and in a corner a toddler will not
+     reach for. Hidden once the page is already running full screen. */
+  #full {
+    position: fixed;
+    right: 8px;
+    bottom: 8px;
+    z-index: 5;
+    border: 0;
+    border-radius: 999px;
+    padding: 4px 11px;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b5b7a;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(4px);
+    opacity: 0.42;
+  }
+  #full:active { transform: scale(0.95); }
+  body.fs #full { display: none; }
+
+  /* Shown only if the browser cannot run the game at all. */
+  #fallback {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-content: center;
+    text-align: center;
+    padding: 24px;
+    color: #3b2f4a;
+    font-size: 18px;
+  }
+  body.broken #fallback { display: grid; }
+  body.broken #stage { display: none; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<button id="full" type="button">מסך מלא</button>
+<div id="fallback">
+  <p>הדפדפן הזה לא תומך במשחק.<br>כדאי לנסות Chrome, Safari או Edge מעודכנים.</p>
+</div>
+
+<script>
+  // Feature gate before the module loads, so an old browser shows a message
+  // instead of a blank blue screen.
+  (function () {
+    var c = document.createElement('canvas');
+    var ok = !!(c.getContext && c.getContext('2d')) &&
+      (window.AudioContext || window.webkitAudioContext) &&
+      'PointerEvent' in window;
+    if (!ok) document.body.classList.add('broken');
+  })();
+
+  // Full screen keeps browser chrome and the home gesture out of reach on a
+  // tablet. It has to be triggered by a real tap, hence the button.
+  (function () {
+    var btn = document.getElementById('full');
+    var target = document.documentElement;
+    btn.addEventListener('click', function () {
+      var fn = target.requestFullscreen || target.webkitRequestFullscreen;
+      if (fn) fn.call(target, { navigationUI: 'hide' }).catch(function () {});
+      // No orientation lock on purpose: every scene lays itself out for a tall
+      // screen as well as a wide one, and a toddler turns the tablet constantly.
+    });
+    function sync() {
+      document.body.classList.toggle('fs', !!(document.fullscreenElement || document.webkitFullscreenElement));
+    }
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    if (window.matchMedia('(display-mode: standalone)').matches) document.body.classList.add('fs');
+  })();
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

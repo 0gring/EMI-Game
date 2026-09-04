@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fdcff"/>
+      <stop offset="0.6" stop-color="#c9f2ff"/>
+      <stop offset="1" stop-color="#fff3d6"/>
+    </linearGradient>
+    <radialGradient id="skin" cx="0.4" cy="0.35" r="0.8">
+      <stop offset="0" stop-color="#ffe6d0"/>
+      <stop offset="0.6" stop-color="#f7d3b5"/>
+      <stop offset="1" stop-color="#e2b393"/>
+    </radialGradient>
+    <radialGradient id="ball" cx="0.35" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+
+  <!-- sun -->
+  <circle cx="424" cy="96" r="44" fill="#ffe066"/>
+  <!-- grass -->
+  <path d="M0 400 Q256 360 512 400 L512 512 L0 512 Z" fill="#96da78"/>
+
+  <!-- balloons -->
+  <g stroke="#ffffff" stroke-width="5" fill="none" opacity="0.85">
+    <path d="M92 214 Q104 250 92 288"/>
+    <path d="M420 250 Q432 286 420 324"/>
+  </g>
+  <ellipse cx="92" cy="180" rx="38" ry="44" fill="#ff5d5d"/>
+  <ellipse cx="420" cy="216" rx="34" ry="40" fill="#57c7ff"/>
+
+  <!-- hair back -->
+  <circle cx="256" cy="300" r="132" fill="#4a3226"/>
+  <ellipse cx="142" cy="372" rx="46" ry="78" transform="rotate(12 142 372)" fill="#4a3226"/>
+  <ellipse cx="370" cy="372" rx="46" ry="78" transform="rotate(-12 370 372)" fill="#4a3226"/>
+
+  <!-- face -->
+  <circle cx="256" cy="304" r="116" fill="url(#skin)"/>
+
+  <!-- fringe -->
+  <path d="M142 292 Q152 172 268 178 Q372 184 372 288 Q306 244 250 268 Q198 288 142 292 Z" fill="#4a3226"/>
+
+  <!-- bow -->
+  <g transform="translate(368 214) rotate(-18)">
+    <ellipse cx="-36" cy="0" rx="38" ry="27" transform="rotate(-18 -36 0)" fill="#ff5d5d"/>
+    <ellipse cx="36" cy="0" rx="38" ry="27" transform="rotate(18 36 0)" fill="#ff5d5d"/>
+    <circle cx="0" cy="0" r="16" fill="#d63b48"/>
+  </g>
+
+  <!-- eyes -->
+  <ellipse cx="210" cy="316" rx="27" ry="30" fill="#ffffff"/>
+  <ellipse cx="302" cy="316" rx="27" ry="30" fill="#ffffff"/>
+  <circle cx="214" cy="322" r="15" fill="#3b2f4a"/>
+  <circle cx="306" cy="322" r="15" fill="#3b2f4a"/>
+  <circle cx="208" cy="315" r="5.5" fill="#ffffff"/>
+  <circle cx="300" cy="315" r="5.5" fill="#ffffff"/>
+
+  <!-- cheeks + smile -->
+  <ellipse cx="172" cy="358" rx="24" ry="16" fill="#ff788c" opacity="0.4"/>
+  <ellipse cx="340" cy="358" rx="24" ry="16" fill="#ff788c" opacity="0.4"/>
+  <path d="M228 372 Q256 400 284 372" stroke="#8a5a4a" stroke-width="12" stroke-linecap="round" fill="none"/>
+
+  <!-- gloss -->
+  <ellipse cx="176" cy="150" rx="210" ry="180" fill="url(#ball)"/>
+</svg>
