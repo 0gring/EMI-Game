@@ -15,11 +15,17 @@ Three ways in, in order of least setup:
    game, every sample and both fonts inlined, 2.8MB, no server and no network
    needed. Open it from anywhere, mail it, put it on a USB stick. A test asserts
    the page makes exactly one request: itself.
-2. **GitHub Pages.** The workflow turns Pages on itself on its first run, so
-   there is nothing to configure: the game lives at
+2. **GitHub Pages.** Costs one click, once: *Settings → Pages → Source: GitHub
+   Actions*, then re-run the workflow from the Actions tab. After that every
+   push deploys automatically and the game lives at
    `https://<user>.github.io/EMI-Game/`, with the standalone copy alongside it
    at `/emi-world.html`. This is the one to add to a tablet's home screen,
    because the service worker then keeps it working with no signal.
+
+   The workflow does ask GitHub to enable Pages by itself, but this
+   repository's Actions token is not allowed to create a Pages site
+   (`Resource not accessible by integration`), so the click cannot be
+   automated away.
 3. **Locally**, for development — see below.
 
 ## Playing it
@@ -139,7 +145,7 @@ console error, page error or dropped frame rate.
 ## Publishing it
 
 `.github/workflows/pages.yml` deploys on any push to `main` or a `claude/*`
-branch, and can be run by hand from the Actions tab. It enables Pages through
-the API on its first run, so no repository setting has to be changed first. If
-an account policy blocks that, turn it on under *Settings → Pages → Source:
-GitHub Actions* and re-run the workflow.
+branch, and can be run by hand from the Actions tab. It checks out, installs,
+builds the standalone file and stages the site — all of which already pass in
+CI — and then stops at `configure-pages` until Pages has been enabled once in
+the repository settings, as described above.
