@@ -1,7 +1,8 @@
 # Publishes the game to GitHub Pages so it can be opened on a tablet.
 #
-# One-time setup: Settings -> Pages -> Source: "GitHub Actions". Nothing else is
-# needed; the next push (or a manual run from the Actions tab) deploys.
+# The first run turns Pages on by itself (see the enablement flag below), so
+# there is nothing to set by hand. If the account blocks that, the fallback is
+# Settings -> Pages -> Source: "GitHub Actions", then re-run this workflow.
 
 name: Deploy to Pages
 
@@ -45,7 +46,12 @@ jobs:
           cp dist/emi-world.html _site/emi-world.html
           echo "Published $(date -u +%FT%TZ) from ${GITHUB_SHA::7}" > _site/build.txt
 
+      # enablement turns Pages on through the API the first time this runs, so
+      # there is no setting to flip by hand. It needs the pages: write
+      # permission granted above.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
