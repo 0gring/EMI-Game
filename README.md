@@ -71,8 +71,12 @@ These are the reasons behind most of the code:
 - **All ten fingers work.** A two-year-old plants a palm on the glass, so the
   engine tracks every pointer rather than one cursor.
 - **Nothing sounds wrong.** Instruments are tuned to pentatonic and major
-  scales, so mashing produces music. Everything goes through a limiter, and the
-  soundtrack ducks under a reward instead of fighting it.
+  scales, so mashing produces music. The soundtrack ducks under a reward instead
+  of fighting it, and the output cannot clip: a limiter catches peaks and a
+  soft-clip curve rounds whatever gets past it, because mashing with both hands
+  stacks a dozen samples on the same millisecond and clipping is heard as
+  crackle. `tools/audio-headroom.mjs` renders the real graph offline and counts
+  clipped samples; the test suite asserts the count is zero.
 - **The way out needs intent.** The home button fills a ring over half a second
   of holding, so a stray palm cannot throw her out of an activity mid-play. The
   speaker button is one tap, because a grown-up may need silence now.
@@ -125,14 +129,16 @@ slow frames.
 
 ```
 npm start            # local server, prints the address to use on a tablet
-npm test             # 41 functional checks in real Chromium
-npm run test:bundle  # the same checks against the single-file build (42)
+npm test             # 43 functional checks in real Chromium
+npm run lint         # catches typo'd identifiers and leftover variables
+npm run test:bundle  # the same checks against the single-file build (44)
 npm run verify       # screenshots every scene at four sizes, fails on any error
 npm run bundle       # dist/emi-world.html, the standalone copy
 npm run profile      # per-scene frame rate
 node tools/stress.mjs         # frame rate with the particle pool full
 node tools/make-icons.mjs     # re-render the PNG icons from icon.svg
 node tools/shrink-audio.mjs   # re-trim and re-encode the samples (--write)
+node tools/audio-headroom.mjs # render the audio graph offline, measure clipping
 ```
 
 `npm test` drives the actual game — it pops a balloon and asserts a star was

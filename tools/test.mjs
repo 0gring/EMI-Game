@@ -127,6 +127,42 @@ const voices = await page.evaluate(async () => {
 check('mashing does not throw in the audio graph', voices.threw === null, voices.threw || '');
 check('voice cap holds under mashing', voices.voices <= 30, `${voices.voices} live voices`);
 
+// Output must never leave the graph above full scale: samples past 1.0 are
+// hard-clipped by the sound card, which is heard as crackle. Rendering the real
+// graph offline is the only way to know rather than hope.
+const headroom = await page.evaluate(async () => {
+  const live = window.game.audio;
+  const { AudioBus } = window.__emiAudioModule;
+  const off = new OfflineAudioContext(2, 44100 * 4, 44100);
+  const bus = new AudioBus('');
+  bus.init(off);
+  for (const [k, v] of live.sfx) bus.sfx.set(k, v);
+  for (const [k, v] of live.inst) bus.inst.set(k, v.slice());
+
+  // Everything the game can fire on one millisecond, at once.
+  ['pop', 'success', 'reward', 'bonus', 'levelup', 'fanfare', 'chime', 'badge']
+    .forEach((n) => bus.play(n, { throttle: 0, vol: 0.9 }));
+  ['C4', 'E4', 'G4', 'C5', 'E5', 'G5', 'C6', 'E6'].forEach((n) => {
+    bus.note('harp', n, { vol: 0.9 });
+    bus.note('xylophone', n, { vol: 0.9 });
+  });
+
+  const out = await off.startRendering();
+  let peak = 0;
+  let clipped = 0;
+  for (let c = 0; c < out.numberOfChannels; c++) {
+    const d = out.getChannelData(c);
+    for (let i = 0; i < d.length; i++) {
+      const v = Math.abs(d[i]);
+      if (v > peak) peak = v;
+      if (v >= 1) clipped++;
+    }
+  }
+  return { peak, clipped };
+});
+check('the loudest possible moment does not clip', headroom.clipped === 0,
+  `peak ${headroom.peak.toFixed(3)}, ${headroom.clipped} clipped samples`);
+
 // --- music engine ----------------------------------------------------------
 
 const music = await page.evaluate(async () => {

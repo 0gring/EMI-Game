@@ -1,7 +1,8 @@
 // Entry point. Wires the engine, audio and scenes together.
 
 import { Engine } from './core/engine.js';
-import { AudioBus, Music } from './core/audio.js';
+import * as AudioModule from './core/audio.js';
+const { AudioBus, Music } = AudioModule;
 import { state, visited } from './core/state.js';
 import { TitleScene } from './scenes/title.js';
 import { HubScene } from './scenes/hub.js';
@@ -92,6 +93,10 @@ function lockDownBrowser() {
     try { localStorage.setItem('emi-world-v1', JSON.stringify(state)); } catch { /* ignore */ }
   });
 }
+
+// Exposed for tools/audio-headroom.mjs, which rebuilds this exact graph
+// offline to measure how close to clipping the output runs.
+window.__emiAudioModule = AudioModule;
 
 lockDownBrowser();
 

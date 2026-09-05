@@ -83,26 +83,39 @@ export class AudioBus {
   }
 
   // Must be called from inside a user gesture or mobile browsers keep us silent.
-  init() {
+  // Accepts a context so the identical graph can be rendered offline and
+  // measured - see tools/audio-headroom.mjs.
+  init(existing) {
     if (this.ctx) return this.ctx;
     const AC = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AC({ latencyHint: 'interactive' });
+    const ctx = existing || new AC({ latencyHint: 'interactive' });
     this.ctx = ctx;
 
+    // Gain staging, then two stages of protection. A toddler mashing with both
+    // hands stacks a dozen samples on the same millisecond, and anything that
+    // leaves this graph above full scale is hard-clipped by the sound card -
+    // which is exactly what crackle is.
     this.limiter = ctx.createDynamicsCompressor();
-    this.limiter.threshold.value = -10;
-    this.limiter.knee.value = 12;
-    this.limiter.ratio.value = 6;
-    this.limiter.attack.value = 0.003;
-    this.limiter.release.value = 0.18;
+    this.limiter.threshold.value = -6;
+    this.limiter.knee.value = 3;
+    this.limiter.ratio.value = 12;
+    this.limiter.attack.value = 0.002;
+    this.limiter.release.value = 0.15;
+
+    // The compressor needs a couple of milliseconds to react, so the very front
+    // of a stacked transient gets past it. This rounds whatever is left instead
+    // of letting it square off, and cannot output past full scale at all.
+    this.softClip = ctx.createWaveShaper();
+    this.softClip.curve = makeSoftClipCurve();
+    this.softClip.oversample = '2x';
 
     this.master = ctx.createGain();
-    this.master.gain.value = 0.9;
+    this.master.gain.value = 1;
 
     this.sfxGain = ctx.createGain();
-    this.sfxGain.gain.value = 0.85;
+    this.sfxGain.gain.value = 0.72;
     this.musicGain = ctx.createGain();
-    this.musicGain.gain.value = 0.34;
+    this.musicGain.gain.value = 0.3;
 
     // A short, bright hall. Sampled instruments straight out of the file sound
     // dry and clinical; a touch of this makes the xylophone sound like a toy in
@@ -110,14 +123,15 @@ export class AudioBus {
     this.verb = ctx.createConvolver();
     this.verb.buffer = makeImpulse(ctx, 1.9, 2.6);
     this.verbGain = ctx.createGain();
-    this.verbGain.gain.value = 0.5;
+    this.verbGain.gain.value = 0.42;
 
     this.sfxGain.connect(this.limiter);
     this.musicGain.connect(this.limiter);
     this.verbGain.connect(this.verb);
     this.verb.connect(this.limiter);
     this.limiter.connect(this.master);
-    this.master.connect(ctx.destination);
+    this.master.connect(this.softClip);
+    this.softClip.connect(ctx.destination);
 
     return ctx;
   }
@@ -143,7 +157,7 @@ export class AudioBus {
     if (this.master) {
       const t = this.ctx.currentTime;
       this.master.gain.cancelScheduledValues(t);
-      this.master.gain.setTargetAtTime(m ? 0 : 0.9, t, 0.05);
+      this.master.gain.setTargetAtTime(m ? 0 : 1, t, 0.05);
     }
   }
 
@@ -220,7 +234,7 @@ export class AudioBus {
 
   _src(buffer, { vol = 1, rate = 1, pan = 0, when = 0, verb = 0.25, attack = 0, dur = 0, bend = null, offset = 0 } = {}) {
     if (!this.ctx || !buffer) return null;
-    if (this._voices > 28) return null; // hard voice cap: mashing stays clean
+    if (this._voices > 18) return null; // hard voice cap: mashing stays clean
     const ctx = this.ctx;
     const t = when || ctx.currentTime;
 
@@ -237,12 +251,12 @@ export class AudioBus {
     }
 
     const g = ctx.createGain();
-    if (attack > 0) {
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(vol, t + attack);
-    } else {
-      g.gain.setValueAtTime(vol, t);
-    }
+    // Never start a voice with a step change. Even 1.5ms of ramp removes the
+    // click a non-zero first sample would otherwise make, and is far too short
+    // to soften a percussive attack.
+    const rise = Math.max(attack, 0.0015);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + rise);
 
     let node = g;
     if (pan !== 0 && ctx.createStereoPanner) {
@@ -471,6 +485,23 @@ export class Music {
       this.nextTime += stepDur;
     }
   }
+}
+
+// Transfer curve for the safety clipper. Deliberately transparent below `knee`:
+// a plain tanh would also apply makeup gain to everything quiet, squashing the
+// dynamics the game is carefully built out of. Below the knee this is exactly
+// y = x; above it the remaining headroom is spent smoothly, asymptotic to the
+// ceiling, so a peak rounds over instead of squaring off.
+function makeSoftClipCurve(steps = 4096, knee = 0.6, ceiling = 0.98) {
+  const curve = new Float32Array(steps);
+  const span = ceiling - knee;
+  for (let i = 0; i < steps; i++) {
+    const x = (i / (steps - 1)) * 2 - 1;
+    const a = Math.abs(x);
+    const y = a <= knee ? a : knee + span * Math.tanh((a - knee) / span);
+    curve[i] = Math.sign(x) * y;
+  }
+  return curve;
 }
 
 // Noise-burst impulse response. Cheap, and much friendlier than shipping a
