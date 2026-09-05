@@ -18,6 +18,22 @@ import { clamp, rand, pick } from './util.js';
 const resolveAsset = (url) =>
   (typeof globalThis !== 'undefined' && globalThis.__EMI_ASSETS?.[url]) || url;
 
+// Turns the base64 payload of a data: URI into the ArrayBuffer decodeAudioData
+// wants, without going through the network stack at all.
+function base64ToBuffer(uri) {
+  const b64 = uri.slice(uri.indexOf(',') + 1);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function fetchBuffer(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`audio ${res.status} ${url}`);
+  return res.arrayBuffer();
+}
+
 const NOTE_OFFSET = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 export function noteToMidi(name) {
@@ -63,6 +79,7 @@ export class AudioBus {
     this.muted = false;
     this.lastPlay = new Map();  // crude per-sound throttle
     this._voices = 0;
+    this.failed = 0;            // samples that would not load or decode
   }
 
   // Must be called from inside a user gesture or mobile browsers keep us silent.
@@ -105,8 +122,20 @@ export class AudioBus {
     return ctx;
   }
 
+  // Browsers suspend an audio context for all sorts of reasons after it has
+  // started - the tab going to the background, a phone call, an iPad locking -
+  // so this is called again on every touch rather than once at startup.
   resume() {
-    if (this.ctx && this.ctx.state !== 'running') this.ctx.resume();
+    if (this.ctx && this.ctx.state !== 'running') {
+      try { this.ctx.resume(); } catch { /* nothing else to try */ }
+    }
+  }
+
+  // True when sound can actually be heard right now. The speaker button shows
+  // its crossed-out state when this is false, so silence always looks
+  // deliberate rather than broken.
+  get running() {
+    return !!this.ctx && this.ctx.state === 'running' && !this.muted;
   }
 
   setMuted(m) {
@@ -125,9 +154,13 @@ export class AudioBus {
   async _load(url) {
     if (this.pending.has(url)) return this.pending.get(url);
     const p = (async () => {
-      const res = await fetch(resolveAsset(url));
-      if (!res.ok) throw new Error(`audio ${res.status} ${url}`);
-      const raw = await res.arrayBuffer();
+      const src = resolveAsset(url);
+      // A data: URI is decoded in-process rather than fetched. Pages served
+      // under a strict Content-Security-Policy - which is what a published or
+      // embedded copy of this game gets - count fetch() on a data: URL against
+      // connect-src, so fetching the inlined samples silently returned nothing
+      // and the whole game ran mute.
+      const raw = src.startsWith('data:') ? base64ToBuffer(src) : await fetchBuffer(src);
       return await this.ctx.decodeAudioData(raw);
     })();
     this.pending.set(url, p);
@@ -143,7 +176,9 @@ export class AudioBus {
       jobs.push(
         this._load(`${this.base}assets/sfx/${n}.mp3`)
           .then((b) => this.sfx.set(n, b))
-          .catch(() => {})
+          // One missing effect must not stop the game, but it is still counted:
+          // a silent game used to look exactly like a working one.
+          .catch(() => { this.failed++; })
       );
     }
     for (const inst of instruments) jobs.push(...this._instJobs(inst));
@@ -172,7 +207,7 @@ export class AudioBus {
           list.push({ midi: noteToMidi(n), buffer: b });
           list.sort((a, c) => a.midi - c.midi);
         })
-        .catch(() => {})
+        .catch(() => { this.failed++; })
     );
   }
 

@@ -16,6 +16,7 @@ const HOLD = 0.45;
 export class Hud {
   constructor({ home = true } = {}) {
     this.showHome = home;
+    this.audible = true;
     this.hold = 0;
     this.holdId = null;
     this.homePress = new Spring(0, 260, 18);
@@ -158,7 +159,9 @@ export class Hud {
       }
     }
     const mr = iconButton(g, this.muteX, this.muteY, r, { press: this.mutePress.value, color: 'rgba(255,255,255,0.9)' });
-    speakerIcon(g, this.muteX, this.muteY, mr * 0.52, !state.muted);
+    // Crossed out when muted *or* when the browser is holding sound back, so
+    // silence never looks like a bug.
+    speakerIcon(g, this.muteX, this.muteY, mr * 0.52, this.audible);
   }
 }
 
@@ -237,6 +240,7 @@ export class SceneBase {
 
   updateBase(dt, e) {
     this.t += dt;
+    this.hud.audible = this.audio.running;
     this.idle = e.pointers.size ? 0 : this.idle + dt;
     this.p.update(dt);
     if (this.comboTimer > 0) {

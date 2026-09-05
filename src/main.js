@@ -41,6 +41,10 @@ class Game {
     this.music = new Music(this.audio);
     this.loaded = new Set();
 
+    // Any touch is a chance to get sound back: browsers suspend the audio
+    // context whenever they feel like it, and a silent game reads as broken.
+    this.engine.onAnyTouch = () => this.audio.resume();
+
     this.engine.onVisibility = (hidden) => {
       if (hidden) this.music.stop();
       else {

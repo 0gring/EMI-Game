@@ -132,6 +132,7 @@ export class Engine {
       // Capture keeps a finger that slides off the canvas reporting to us. It
       // throws if the pointer is already gone, which is harmless.
       try { c.setPointerCapture?.(e.pointerId); } catch { /* pointer already released */ }
+      this.onAnyTouch?.();
       const p = this._point(e);
       this.pointers.set(p.id, p);
       this.scene?.onDown?.(p, this);

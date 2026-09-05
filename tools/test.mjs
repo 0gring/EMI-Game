@@ -37,7 +37,16 @@ const server = await new Promise((ok) => {
       if (p === '/') p = '/index.html';
       if (BUNDLE && p === '/index.html') p = '/dist/emi-world.html';
       const body = await readFile(join(ROOT, p));
-      res.writeHead(200, { 'content-type': TYPES[extname(p)] || 'application/octet-stream' });
+      const headers = { 'content-type': TYPES[extname(p)] || 'application/octet-stream' };
+      // The single file gets published into a sandbox with a strict policy, so
+      // test it under one. connect-src 'none' is the part that matters: it stops
+      // the page reaching the network - including, less obviously, fetch() on a
+      // data: URL, which is how the inlined samples used to be read.
+      if (BUNDLE) {
+        headers['content-security-policy'] =
+          "default-src 'self' 'unsafe-inline' data: blob:; connect-src 'none'";
+      }
+      res.writeHead(200, headers);
       res.end(body);
     } catch { res.writeHead(404).end(); }
   });
@@ -71,9 +80,13 @@ const audio = await page.evaluate(() => {
     minDur: Math.min(...durations),
     maxDur: Math.max(...durations),
     inst,
+    failed: a.failed,
     sampleRate: a.ctx.sampleRate,
   };
 });
+// The bug this guards: under a strict CSP every sample failed to load, each
+// failure was swallowed, and the game ran perfectly and completely silent.
+check('no sample failed to load', audio.failed === 0, `${audio.failed} failed`);
 check('sound effect library decoded', audio.sfx === 28, `${audio.sfx} files`);
 check('every effect has audible length', audio.minDur > 0.02 && audio.maxDur < 6,
   `${audio.minDur.toFixed(2)}s - ${audio.maxDur.toFixed(2)}s`);
@@ -159,7 +172,12 @@ const pop = await page.evaluate(() => {
   };
   hit(b.x, b.y);
   const popped = s.popped;
-  // six in a row should cross a reward threshold
+  // Six more in a row should cross a reward threshold. How many balloons happen
+  // to be floating is up to the spawner, so top the sky up first rather than
+  // letting the run depend on timing.
+  while (s.balloons.filter((x) => x.pop === 0).length < 8) {
+    s.balloons.push(new s.balloons[0].constructor(e));
+  }
   for (let i = 0; i < 6; i++) {
     const n = s.balloons.find((x) => x.pop === 0);
     if (!n) break;
