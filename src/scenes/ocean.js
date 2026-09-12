@@ -55,9 +55,23 @@ class Swimmer {
   }
 }
 
+// The sea fills up as she goes: more creatures, arriving sooner, with the
+// schools and the whale turning up more often. It stays the slow scene - none of
+// this is about reacting quickly.
+const TUNING = [
+  { cap: 8, gap: [1.4, 3.0], event: [16, 26] },
+  { cap: 11, gap: [1.1, 2.4], event: [13, 21] },
+  { cap: 14, gap: [0.9, 2.0], event: [10, 17] },
+  { cap: 17, gap: [0.7, 1.6], event: [8, 14] },
+];
+
 export class OceanScene extends SceneBase {
   constructor(game) {
-    super(game, { sky: SKIES.ocean, music: 'calm' });
+    super(game, {
+      sky: SKIES.ocean, music: 'calm', id: 'ocean', hue: C.sky,
+      goals: [6, 10, 14, 18],
+    });
+    this.tune = TUNING[0];
     this.swimmers = [];
     this.bubbles = [];
     this.spawnT = 0;
@@ -76,9 +90,16 @@ export class OceanScene extends SceneBase {
     super.enter();
     this.audio.play('sleep', { vol: 0.5 });
     this.audio.arp('harp', ['C4', 'G4', 'C5', 'E5'], { step: 0.12, vol: 0.4 });
+    this.tune = this.levels.pick(TUNING);
     for (let i = 0; i < 5; i++) {
       this.swimmers.push(new Swimmer(e, pick(SEA), { x: rand(e.w * 0.1, e.w * 0.9) }));
     }
+  }
+
+  onLevelUp(level, e) {
+    this.tune = this.levels.pick(TUNING);
+    // A new level brings a whole school in to say hello.
+    this.runEvent(e);
   }
 
   layout(e) {
@@ -154,6 +175,7 @@ export class OceanScene extends SceneBase {
     const isNew = !state.stickers[s.spec.id];
     collect(s.spec.id);
     this.found.add(s.spec.id);
+    if (this.scoreLevel(1, e)) return;   // the level-up is celebration enough
     if (isNew) {
       this.reward(s.x, s.drawY, { stars: 2, big: true, colors: [s.spec.color, '#fff', C.sky] });
     } else if (this.combo % 5 === 4) {
@@ -229,8 +251,8 @@ export class OceanScene extends SceneBase {
     if (this.chest.t > 0) this.chest.t = Math.max(0, this.chest.t - dt * 0.8);
 
     this.spawnT -= dt;
-    if (this.spawnT <= 0 && this.swimmers.length < 12) {
-      this.spawnT = rand(1.1, 2.6);
+    if (this.spawnT <= 0 && this.swimmers.length < this.tune.cap) {
+      this.spawnT = rand(this.tune.gap[0], this.tune.gap[1]);
       this.swimmers.push(new Swimmer(e, pick(SEA)));
     }
     for (let i = this.swimmers.length - 1; i >= 0; i--) {
@@ -260,7 +282,7 @@ export class OceanScene extends SceneBase {
 
     this.eventT -= dt;
     if (this.eventT <= 0) {
-      this.eventT = rand(14, 24);
+      this.eventT = rand(this.tune.event[0], this.tune.event[1]);
       this.runEvent(e);
     }
 

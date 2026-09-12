@@ -13,6 +13,7 @@ import {
 import { SceneBase } from '../core/ui.js';
 import { drawEmi, LAND, EMI_FEET } from '../core/creatures.js';
 import { state, stickerCount } from '../core/state.js';
+import { levelOf, MAX_LEVEL } from '../core/levels.js';
 
 export class HubScene extends SceneBase {
   constructor(game) {
@@ -275,6 +276,21 @@ export class HubScene extends SceneBase {
       g.lineWidth = r * 0.07;
       circle(g, 0, 0, r * 0.94);
       g.stroke();
+
+      // Four arcs around the rim, one per level, filled as far as she has taken
+      // this activity. It reads as a ring slowly closing rather than a number.
+      const reached = levelOf(n.id);
+      const seg = TAU / MAX_LEVEL;
+      g.lineCap = 'round';
+      for (let k = 0; k < MAX_LEVEL; k++) {
+        const from = -Math.PI / 2 + k * seg + seg * 0.08;
+        const to = from + seg * 0.84;
+        g.strokeStyle = k < reached ? '#fff' : 'rgba(255,255,255,0.28)';
+        g.lineWidth = r * (k < reached ? 0.1 : 0.07);
+        g.beginPath();
+        g.arc(0, 0, r * 1.14, from, to);
+        g.stroke();
+      }
 
       g.save();
       g.scale(r, r);

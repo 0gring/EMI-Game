@@ -57,6 +57,29 @@ screen with no browser chrome and no address bar for small fingers to find.
 | 🎨 | **ציור** Painting | Finger paint with nine colours, a rainbow brush and five stamps | the one she will sit with longest. Height on the screen picks the pitch, so a scribble sounds like a run up and down the scale |
 | 🐠 | **ים** Sea | Fish drift past, bubbles rise, a treasure chest opens | the wind-down activity. Slower and quieter, with a whale that swims by and schools of fish that cross now and then |
 
+## Four levels each
+
+Every activity has four levels. A level ends when she has done its thing enough
+times — popped eight balloons, found four animals, finished two boards — and the
+next one turns the activity up. The rule behind all of it: **a level raises how
+much there is to do, never how hard it is to succeed.** There is no level to be
+stuck on, no way back down, and level four does not close anything — the
+activity keeps going at full tilt.
+
+| Activity | What each level adds |
+| --- | --- |
+| Balloons | More in the sky at once, rising a little faster, golden ones more often. They never get smaller or harder to hit |
+| Animals | More hiding places popping out on their own and waiting to be touched, so there is always somewhere to run to |
+| Music | Level one is free play; finishing it turns on follow-the-lights, and each level after is the next tune. A wrong bar still just plays its note |
+| Shapes | 3 holes, then 4, 5, 6 — and pieces start more turned around. The snap radius stays enormous at every level |
+| Painting | Cannot get harder, so it hands out more to paint with: 6 colours and a brush, then the rainbow and stamps, then sparkles, then strokes that bloom flowers |
+| Sea | More creatures, arriving sooner, with the schools and the whale visiting more often. It stays the slow scene |
+
+A slim four-segment bar along the top edge is the whole progress display: one
+segment per level, the current one filling as she plays. Levelling up sets off
+the biggest celebration in the game. On the map, a ring of four arcs around each
+activity shows how far it has been taken.
+
 Stars collect in the corner and animals collect in an album on the map, so
 coming back has a point without anything ever being taken away.
 
@@ -105,7 +128,8 @@ src/core/
   gfx.js                drawing toolkit and the gradient cache
   fx.js                 pooled particle system
   ui.js                 shared chrome and the scene base class
-  state.js              saved stars and stickers
+  levels.js             four levels per activity, and what each one turns up
+  state.js              saved stars, stickers and levels
   util.js               easing, springs, small maths
 src/scenes/             title, hub and the six activities
 tools/                  test, verify, profile, bundle, audio and icon build
@@ -129,9 +153,9 @@ slow frames.
 
 ```
 npm start            # local server, prints the address to use on a tablet
-npm test             # 43 functional checks in real Chromium
+npm test             # 68 functional checks in real Chromium
 npm run lint         # catches typo'd identifiers and leftover variables
-npm run test:bundle  # the same checks against the single-file build (44)
+npm run test:bundle  # the same checks against the single-file build (69)
 npm run verify       # screenshots every scene at four sizes, fails on any error
 npm run bundle       # dist/emi-world.html, the standalone copy
 npm run profile      # per-scene frame rate
@@ -144,7 +168,9 @@ node tools/audio-headroom.mjs # render the audio graph offline, measure clipping
 `npm test` drives the actual game — it pops a balloon and asserts a star was
 awarded, drags a shape and asserts it snapped, checks that a wrong bar cannot
 fail the song, that a quick tap on home does not exit but a hold does, and that
-the audio samples really decoded. `npm run verify` catches layout problems by
+the audio samples really decoded. It also walks every activity through all four
+levels, asserting each one measurably changes that activity's tuning, that four
+is really the ceiling, and that levels survive closing the game. `npm run verify` catches layout problems by
 walking every scene at tablet, phone and desktop sizes and failing on any
 console error, page error or dropped frame rate.
 

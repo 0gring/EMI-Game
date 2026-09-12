@@ -9,7 +9,7 @@
 // matter how much she has drawn.
 
 import { TAU, Spring, rand, pick, clamp } from '../core/util.js';
-import { C, SKIES, SPARKS } from '../core/palette.js';
+import { C, SKIES, SPARKS, CONFETTI } from '../core/palette.js';
 import {
   circle, roundRect, label, radial, lighten, darken, star as starPath, heart, flower, hsl,
   alpha,
@@ -32,15 +32,29 @@ const PAINTS = [
 const STAMPS = ['star', 'heart', 'flower', 'butterfly', 'sun'];
 const SCALE = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6', 'D6', 'E6'];
 
+// Painting cannot get harder, so its levels hand out more to paint with: the
+// first level is six colours and a brush, and each one after adds colours,
+// stamps, and finally strokes that bloom flowers behind the finger.
+const TUNING = [
+  { colors: 6, stamps: 0, sparkle: 0.5, bloom: 0 },
+  { colors: 9, stamps: 2, sparkle: 0.7, bloom: 0 },
+  { colors: 9, stamps: 4, sparkle: 1.0, bloom: 0.05 },
+  { colors: 9, stamps: 5, sparkle: 1.3, bloom: 0.12 },
+];
+
 export class PaintScene extends SceneBase {
   constructor(game) {
-    super(game, { sky: SKIES.paint, music: 'calm' });
+    super(game, {
+      sky: SKIES.paint, music: 'calm', id: 'paint', hue: C.magenta,
+      goals: [6, 10, 14, 18],
+    });
+    this.tune = TUNING[0];
     this.paint = 0;
     this.tool = 'brush';       // 'brush' | 'stamp'
     this.stamp = 0;
     this.layer = null;
     this.lctx = null;
-    this.hue = 0;
+    this.rainbowHue = 0;
     this.clearing = 0;
     this.strokeCount = 0;
     this.btnPress = PAINTS.map(() => new Spring(0, 300, 16));
@@ -50,9 +64,26 @@ export class PaintScene extends SceneBase {
     this.noteT = 0;
   }
 
-  enter() {
+  enter(e) {
     super.enter();
     this.audio.play('open', { vol: 0.5 });
+    this.tune = this.levels.pick(TUNING);
+  }
+
+  onLevelUp(level, e) {
+    this.tune = this.levels.pick(TUNING);
+    this.layout(e);
+    // The new colours and stamps arrive in a puff over the tray, so the thing
+    // that changed is the thing she is looking at.
+    this.paintBtns.slice(0, this.tune.colors).forEach((b, i) => {
+      this.p.sparkle(b.x, b.y, ['#fff', C.yellow, C.pink], 6, e.min * 0.12);
+    });
+    this.p.confetti(this.toolBtn.x, this.toolBtn.y, CONFETTI, 20, e.min * 0.6);
+  }
+
+  // Only the colours this level has unlocked are on the tray.
+  get palette() {
+    return PAINTS.slice(0, this.tune.colors);
   }
 
   layout(e) {
@@ -60,7 +91,7 @@ export class PaintScene extends SceneBase {
     // One tray along the bottom in every orientation: nine colours plus the
     // brush/stamp toggle and the sponge is more than fits down a short edge, and
     // the bottom is also the easiest reach for short arms.
-    const n = PAINTS.length;
+    const n = this.tune.colors;
     const slots = n + 2.8;                    // colours + two slightly larger tools
     const slot = e.w / slots;
     const btn = Math.min(slot * 0.42, e.min * 0.055);
@@ -71,9 +102,12 @@ export class PaintScene extends SceneBase {
     this.toolBtn = { x: e.w - slot * 0.75, y: trayY, r: btn * 1.14 };
     this.clearBtn = { x: slot * 0.75, y: trayY, r: btn * 1.14 };
     const first = e.w - slot * 1.8 - slot * 0.5;
-    this.paintBtns = PAINTS.map((p, i) => ({
+    this.paintBtns = this.palette.map((p, i) => ({
       x: first - i * slot, y: trayY, r: btn, i, p,
     }));
+    // A level that takes colours away would strand the selection on a button
+    // that is no longer there.
+    this.paint = Math.min(this.paint, this.paintBtns.length - 1);
     this.canvasRect = { x: 0, y: 0, w: e.w, h: e.h - this.paletteW };
     this.emiS = Math.min(e.min * 0.05, this.paletteW * 0.34);
     this.rebuildLayer(e);
@@ -117,10 +151,18 @@ export class PaintScene extends SceneBase {
       }
     }
     if (Math.hypot(p.x - this.toolBtn.x, p.y - this.toolBtn.y) < this.toolBtn.r * 1.3) {
+      if (this.tune.stamps === 0) {
+        // Stamps are not unlocked yet; the button still answers rather than
+        // doing nothing, which would read as broken.
+        this.audio.play('nope', { vol: 0.35 });
+        this.p.sparkle(this.toolBtn.x, this.toolBtn.y, ['#fff', C.pink], 6, e.min * 0.1);
+        p.data = 'ui';
+        return;
+      }
       if (this.tool === 'brush') {
         this.tool = 'stamp';
       } else {
-        this.stamp = (this.stamp + 1) % STAMPS.length;
+        this.stamp = (this.stamp + 1) % this.tune.stamps;
         if (this.stamp === 0) this.tool = 'brush';
       }
       this.toolPress.set(1);
@@ -166,6 +208,7 @@ export class PaintScene extends SceneBase {
     const d = p.data;
     if (d && typeof d === 'object' && d.last) {
       this.strokeCount++;
+      this.scoreLevel(1, e);
       // Every few strokes she gets a star, so drawing also feeds the counter.
       if (this.strokeCount % 5 === 0) {
         this.reward(p.x, p.y, { stars: 1, colors: [C.pink, C.yellow, C.sky] });
@@ -180,7 +223,7 @@ export class PaintScene extends SceneBase {
     const d = p.data;
     const ctx = this.lctx;
     const s = this.lscale;
-    const paint = PAINTS[this.paint];
+    const paint = this.palette[this.paint] || PAINTS[0];
     const rainbow = paint.color === 'rainbow';
     const w = e.min * 0.045;
 
@@ -200,7 +243,11 @@ export class PaintScene extends SceneBase {
 
     d.last = { x, y };
 
-    if (Math.random() < 0.5) this.p.sparkle(x, y, SPARKS, 2, e.min * 0.07);
+    if (Math.random() < this.tune.sparkle * 0.5) this.p.sparkle(x, y, SPARKS, 2, e.min * 0.07);
+    // At the top levels the stroke itself starts blooming.
+    if (this.tune.bloom && Math.random() < this.tune.bloom) {
+      this.p.petals(x, y, [col, lighten(col, 0.4), '#fff'], 3);
+    }
 
     // Pitch follows height, so drawing up the screen plays up the scale.
     const moved = Math.hypot(x - from.x, y - from.y);
@@ -220,7 +267,7 @@ export class PaintScene extends SceneBase {
     const ctx = this.lctx;
     const s = this.lscale;
     const kind = STAMPS[this.stamp];
-    const paint = PAINTS[this.paint];
+    const paint = this.palette[this.paint] || PAINTS[0];
     const col = paint.color === 'rainbow' ? hsl(rand(360), 88, 62) : paint.color;
     const size = e.min * rand(0.055, 0.085);
     ctx.save();
@@ -250,7 +297,7 @@ export class PaintScene extends SceneBase {
     this.toolPress.update(dt);
     this.clearPress.update(dt);
     this.emiCheer.update(dt);
-    this.hue = (this.hue + dt * 60) % 360;
+    this.rainbowHue = (this.rainbowHue + dt * 60) % 360;
     if (this.clearing > 0) {
       this.clearing -= dt * 1.6;
       // Wipe from one side, so it reads as a sweep rather than a blink.
@@ -294,8 +341,8 @@ export class PaintScene extends SceneBase {
     // live brush cursor for any finger currently down
     e.pointers.forEach((p) => {
       if (!p.data || typeof p.data !== 'object' || p.data.last === undefined) return;
-      const paint = PAINTS[this.paint];
-      const col = paint.color === 'rainbow' ? hsl(this.hue, 88, 62) : paint.color;
+      const paint = this.palette[this.paint] || PAINTS[0];
+      const col = paint.color === 'rainbow' ? hsl(this.rainbowHue, 88, 62) : paint.color;
       g.save();
       g.globalAlpha = 0.6;
       g.strokeStyle = '#fff';
@@ -337,7 +384,7 @@ export class PaintScene extends SceneBase {
       g.fill();
       if (b.p.color === 'rainbow') {
         const grad = g.createLinearGradient(-r, -r, r, r);
-        for (let i = 0; i <= 6; i++) grad.addColorStop(i / 6, hsl((this.hue + i * 55) % 360, 88, 60));
+        for (let i = 0; i <= 6; i++) grad.addColorStop(i / 6, hsl((this.rainbowHue + i * 55) % 360, 88, 60));
         g.fillStyle = grad;
       } else {
         g.fillStyle = radial(g, -r * 0.3, -r * 0.4, r * 2, [lighten(b.p.color, 0.45), b.p.color, darken(b.p.color, 0.2)]);

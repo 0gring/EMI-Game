@@ -1,7 +1,8 @@
 // Saved progress.
 //
-// The only "progression" in the game is a sticker album that fills up. There is
-// no score to lose and nothing to fail, which is the point: a two year old comes
+// Two kinds of progression, neither of which can go backwards: a sticker album
+// that fills up, and the level each activity has been taken to. There is no
+// score to lose and nothing to fail, which is the point - a two year old comes
 // back because the album is nearly full, not because a number went up.
 
 const KEY = 'emi-world-v1';
@@ -10,6 +11,7 @@ const fresh = () => ({
   stars: 0,
   stickers: {},   // creature / prop id -> times found
   plays: {},      // scene id -> visits
+  levels: {},     // scene id -> level reached, 1..4
   muted: false,
   best: {},
   seen: false,

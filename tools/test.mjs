@@ -361,6 +361,70 @@ check('drawing marks the canvas', paint.drawn > 20, `${paint.drawn} inked sample
 check('a stroke is counted', paint.strokes === 1);
 check('artwork survives a relayout', paint.kept > paint.drawn * 0.5, `${paint.kept} kept`);
 
+// --- levels ----------------------------------------------------------------
+//
+// Every activity has four of them, and each must actually change the activity,
+// persist, and never be reachable in a state she could be stuck in.
+
+// A compact fingerprint of whatever knob a scene turns per level.
+const TUNE_KEYS = ['cap', 'rise', 'holes', 'colors', 'stamps', 'autoOut', 'song'];
+
+for (const id of ['balloons', 'animals', 'music', 'shapes', 'paint', 'ocean']) {
+  // Start this activity from scratch so the walk-through is deterministic, and
+  // wait for the scene to really be on screen before driving it.
+  await page.evaluate((s) => { window.game.state.levels[s] = 1; }, id);
+  await goto(id);
+
+  const r = await page.evaluate((keys) => {
+    const s = window.game.engine.scene;
+    const e = window.game.engine;
+    const snap = () => JSON.stringify(keys.map((k) => (s.tune || {})[k]));
+    const seen = [];
+    let guard = 0;
+    // Drive it through the scoring call the scene itself makes, one point at a
+    // time, recording the tuning each time a level turns over.
+    while (s.levels.level < 4 && guard++ < 400) {
+      const before = s.levels.level;
+      s.scoreLevel(1, e);
+      if (s.levels.level !== before) seen.push(snap());
+    }
+    // Finishing the top level again must not push past it.
+    for (let i = 0; i < s.levels.goal + 2; i++) s.scoreLevel(1, e);
+    return {
+      scene: s.constructor.name,
+      reached: s.levels.level,
+      maxed: !!s.levels.maxedOut,
+      saved: window.game.state.levels[s.levels.id],
+      tunings: seen,
+      goals: s.levels.goals,
+    };
+  }, TUNE_KEYS);
+
+  check(`${id}: climbs to level 4`, r.reached === 4, `${r.scene}, reached ${r.reached}`);
+  check(`${id}: level 4 is the ceiling`, r.maxed === true && r.saved === 4,
+    `saved ${r.saved}, maxed ${r.maxed}`);
+  const distinct = new Set(r.tunings).size;
+  check(`${id}: each level really changes the activity`, distinct === r.tunings.length,
+    `${r.tunings.length} steps, ${distinct} distinct`);
+  check(`${id}: goals stay reachable in one sitting`,
+    r.goals.every((g) => g > 0 && g <= 20), r.goals.join(', '));
+}
+
+// A level she has reached is still there after closing the game.
+await page.reload();
+await page.waitForFunction(() => !!window.game);
+const persisted = await page.evaluate(() => window.game.state.levels);
+check('levels survive closing the game',
+  ['balloons', 'animals', 'music', 'shapes', 'paint', 'ocean'].every((k) => persisted[k] === 4),
+  JSON.stringify(persisted));
+
+// Back in, audio re-unlocked, and into a play scene for the checks below.
+await page.mouse.click(550, 580);
+await page.waitForFunction(() => window.game.engine.scene?.phase === 'ready', null, { timeout: 30000 });
+await page.mouse.click(550, 580);
+await page.waitForFunction(() => window.game.engine.scene?.nodes, null, { timeout: 8000 });
+await goto('paint');
+
 // --- chrome ----------------------------------------------------------------
 
 const hud = await page.evaluate(async () => {

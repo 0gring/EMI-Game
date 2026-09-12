@@ -41,9 +41,24 @@ class Spot {
   }
 }
 
+// The meadow gets busier rather than trickier. Higher levels have more hiding
+// places popping out on their own and waiting to be touched, and each animal
+// stays out a little less long - so there is always something to run to, and
+// never anything to miss.
+const TUNING = [
+  { autoOut: 0.35, stay: 6.0, parade: 4 },
+  { autoOut: 0.6, stay: 5.2, parade: 4 },
+  { autoOut: 0.9, stay: 4.6, parade: 3 },
+  { autoOut: 1.3, stay: 4.0, parade: 3 },
+];
+
 export class AnimalScene extends SceneBase {
   constructor(game) {
-    super(game, { sky: SKIES.animals, music: 'play' });
+    super(game, {
+      sky: SKIES.animals, music: 'play', id: 'animals', hue: C.lime,
+      goals: [4, 6, 8, 10],
+    });
+    this.tune = TUNING[0];
     this.spots = HIDES.map((k, i) => new Spot(k, i));
     this.bag = shuffled(LAND);
     this.bagIdx = 0;
@@ -67,6 +82,7 @@ export class AnimalScene extends SceneBase {
   enter(e) {
     super.enter();
     this.audio.play('open', { vol: 0.6 });
+    this.tune = this.levels.pick(TUNING);
     // Pre-load each spot so the first touch is instant.
     this.spots.forEach((s) => { s.animal = this.nextAnimal(); });
     // One animal is already peeking, as an invitation.
@@ -130,7 +146,7 @@ export class AnimalScene extends SceneBase {
 
   reveal(s, e) {
     s.state = 'out';
-    s.timer = 5.5;
+    s.timer = this.tune.stay;
     s.rise.to(1);
     s.rise.kick(5);
     s.excite.set(1);
@@ -155,10 +171,18 @@ export class AnimalScene extends SceneBase {
       this.p.confetti(s.x, s.y - s.s, [an.color, lighten(an.color, 0.4), '#fff'], 14, e.min * 0.55);
     }
 
-    // Every fourth different animal in one sitting throws a parade.
-    if (this.found.size > 0 && this.found.size % 4 === 0 && !this.parade) {
+    if (this.scoreLevel(1, e)) return;   // a level-up throws its own parade
+
+    // Every few different animals in one sitting throws a parade.
+    if (this.found.size > 0 && this.found.size % this.tune.parade === 0 && !this.parade) {
       this.sched.in(1.1, () => this.startParade(e));
     }
+  }
+
+  onLevelUp(level, e) {
+    this.tune = this.levels.pick(TUNING);
+    // Everyone comes out to mark it.
+    this.startParade(e);
   }
 
   say(an) {
@@ -208,10 +232,14 @@ export class AnimalScene extends SceneBase {
       }
     });
 
-    // Attract: after a while a random hiding place rustles and peeks.
-    if (this.idle > 4.5) {
+    // Hiding places come alive on their own, more of them at higher levels, so
+    // the meadow always has something waiting to be touched. This doubles as
+    // the attract loop: after a few idle seconds it speeds up.
+    const out = this.spots.filter((s) => s.state === 'out').length;
+    const rate = this.tune.autoOut * (this.idle > 4.5 ? 2 : 1);
+    if (out < Math.ceil(this.levels.level / 1.5) && Math.random() < dt * rate) {
       const hidden = this.spots.filter((s) => s.state === 'hidden');
-      if (hidden.length && Math.random() < dt * 0.7) {
+      if (hidden.length) {
         const s = pick(hidden);
         s.state = 'peek';
         s.rise.to(0.3);

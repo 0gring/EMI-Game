@@ -169,6 +169,18 @@ async function run() {
 
     for (const [i, id] of SCENES.entries()) {
       await goScene(page, id);
+      // Push each activity to level three so the shots show the level bar part
+      // filled and the scene at its busier tuning.
+      await page.evaluate(() => {
+        const s = window.game.engine.scene;
+        if (!s.levels) return;
+        while (s.levels.level < 3) s.scoreLevel(1, window.game.engine);
+        s.levels.justLeveled = 0;
+        // Scenes that lay out a fresh puzzle per round only pick up a new level
+        // when the next round starts, which in play is moments later.
+        s.newRound?.(window.game.engine);
+      });
+      await page.waitForTimeout(500);
       await tapAround(page, id === 'shapes' ? 3 : 7);
       if (id === 'paint' || id === 'shapes' || id === 'music') await dragAround(page);
       await multiTouch(page);

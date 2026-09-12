@@ -6,10 +6,14 @@
 // enjoying - but a real, intentional press still gets out in half a second.
 
 import { TAU, clamp, Spring, ease } from './util.js';
-import { C } from './palette.js';
+import { C, CONFETTI } from './palette.js';
 import { Particles } from './fx.js';
-import { circle, iconButton, homeIcon, speakerIcon, verticalGradient, star as starPath, label, alpha } from './gfx.js';
+import {
+  circle, iconButton, homeIcon, speakerIcon, verticalGradient, star as starPath,
+  label, alpha, roundRect, lighten,
+} from './gfx.js';
 import { state, save, addStar } from './state.js';
+import { LevelTrack, MAX_LEVEL } from './levels.js';
 
 const HOLD = 0.45;
 
@@ -166,9 +170,11 @@ export class Hud {
 }
 
 export class SceneBase {
-  constructor(game, { sky, music = 'play', home = true } = {}) {
+  constructor(game, { sky, music = 'play', home = true, id = null, goals = null, hue = C.magenta } = {}) {
     this.game = game;
+    this.id = id;
     this.sky = sky;
+    this.hue = hue;
     this.musicName = music;
     this.p = new Particles();
     this.hud = new Hud({ home });
@@ -176,6 +182,9 @@ export class SceneBase {
     this.idle = 0;          // seconds since the last touch, drives attract mode
     this.combo = 0;
     this.comboTimer = 0;
+    // Activities that have levels pass their four goals; the rest get none and
+    // simply never draw a bar.
+    this.levels = goals ? new LevelTrack(id, goals) : null;
   }
 
   get audio() { return this.game.audio; }
@@ -240,6 +249,7 @@ export class SceneBase {
 
   updateBase(dt, e) {
     this.t += dt;
+    this.levels?.update(dt);
     this.hud.audible = this.audio.running;
     this.idle = e.pointers.size ? 0 : this.idle + dt;
     this.p.update(dt);
@@ -293,7 +303,75 @@ export class SceneBase {
     return Math.sin(t * Math.PI) * clamp((this.idle - 3) / 2, 0, 1);
   }
 
+  // Called by a scene when she has done the thing its level counts. Returns true
+  // if that finished a level, which is the scene's cue to re-read its tuning.
+  scoreLevel(n = 1, e = this.game.engine) {
+    if (!this.levels) return false;
+    if (!this.levels.add(n)) return false;
+    this.onLevelUp?.(this.levels.level, e);
+    this.celebrateLevel(e);
+    return true;
+  }
+
+  // Deliberately the biggest thing that happens in the game: the whole screen
+  // goes off at once, because this is the one moment worth making a fuss about.
+  celebrateLevel(e) {
+    this.audio.play('levelup', { throttle: 0 });
+    this.audio.arp('harp', ['C5', 'E5', 'G5', 'C6', 'E6', 'G6', 'C7', 'E7'], { step: 0.06, vol: 0.6 });
+    this.game.music.duck(0.35, 0.9);
+    for (let i = 0; i < 3; i++) {
+      this.p.confetti(e.w * (0.2 + i * 0.3), e.h * 0.45, CONFETTI, 34, e.min * 1.15);
+    }
+    this.p.sparkle(e.cx, e.cy, ['#fff', C.yellow, '#fff8e0'], 26, e.min * 0.5);
+    e.kickShake(6);
+  }
+
+  // A slim four-segment bar along the very top edge: one segment per level,
+  // the current one filling as she plays. It reads as a journey rather than a
+  // score, and it is the one place on screen nothing else ever wants.
+  drawLevelBar(g, e) {
+    const lv = this.levels;
+    if (!lv) return;
+    const h = Math.max(4, e.min * 0.014);
+    const gap = Math.max(2, e.min * 0.006);
+    const w = (e.w - gap * (MAX_LEVEL + 1)) / MAX_LEVEL;
+    for (let i = 0; i < MAX_LEVEL; i++) {
+      const x = gap + i * (w + gap);
+      g.fillStyle = 'rgba(255,255,255,0.4)';
+      roundRect(g, x, gap, w, h, h / 2);
+      g.fill();
+      // Levels already behind her stay full; the one she is on fills live.
+      const fill = i + 1 < lv.level ? 1 : i + 1 === lv.level ? lv.progress : 0;
+      if (fill > 0.001) {
+        g.fillStyle = i + 1 < lv.level ? lighten(this.hue, 0.15) : this.hue;
+        roundRect(g, x, gap, Math.max(h, w * fill), h, h / 2);
+        g.fill();
+      }
+    }
+    if (lv.justLeveled > 0) this.drawLevelBanner(g, e, lv);
+  }
+
+  drawLevelBanner(g, e, lv) {
+    const t = lv.justLeveled;
+    const inT = clamp((2.6 - t) / 0.35, 0, 1);
+    const out = clamp(t / 0.5, 0, 1);
+    const pop = ease.outBack(inT);
+    g.save();
+    g.globalAlpha = out;
+    g.translate(e.cx, e.h * 0.38);
+    g.scale(pop, pop);
+    g.rotate(Math.sin(this.t * 4) * 0.02);
+    const s = Math.max(26, e.min * 0.11);
+    const top = lv.maxedOut ? 'אלופה!' : `שלב ${lv.level}`;
+    label(g, top, 0, 0, s, this.hue, { stroke: '#fff', sw: s * 0.26 });
+    const s2 = Math.max(15, e.min * 0.05);
+    label(g, lv.maxedOut ? 'הכי גבוה שיש' : 'עכשיו יהיה עוד יותר כיף', 0, s * 0.86, s2, C.ink,
+      { stroke: '#fff', sw: s2 * 0.26 });
+    g.restore();
+  }
+
   drawHud(g, e) {
+    this.drawLevelBar(g, e);
     this.hud.draw(g, e);
   }
 }

@@ -78,7 +78,7 @@ class Piece {
     this.x = 0; this.y = 0;
     this.homeX = 0; this.homeY = 0;
     this.r = 0;
-    this.rot = rand(-0.25, 0.25);
+    this.rot = rand(-0.25, 0.25);   // reset per round from the level's tilt
     this.held = null;
     this.placed = false;
     this.scale = new Spring(1, 220, 14);
@@ -87,9 +87,24 @@ class Piece {
   }
 }
 
+// More shapes on the board each level, and they start a little more turned
+// around. The snap radius shrinks only slightly and stays enormous - three hole
+// widths even at the top level - because the lesson is which shape goes where,
+// not how steady her hand is.
+const TUNING = [
+  { holes: 3, snap: 3.2, tilt: 0.15, boards: 2 },
+  { holes: 4, snap: 3.0, tilt: 0.25, boards: 2 },
+  { holes: 5, snap: 2.8, tilt: 0.4, boards: 2 },
+  { holes: 6, snap: 2.6, tilt: 0.6, boards: 3 },
+];
+
 export class ShapeScene extends SceneBase {
   constructor(game) {
-    super(game, { sky: SKIES.shapes, music: 'play' });
+    super(game, {
+      sky: SKIES.shapes, music: 'play', id: 'shapes', hue: C.orange,
+      goals: [2, 2, 2, 3],
+    });
+    this.tune = TUNING[0];
     this.round = 0;
     this.pieces = [];
     this.holes = [];
@@ -103,15 +118,22 @@ export class ShapeScene extends SceneBase {
   enter(e) {
     super.enter();
     this.audio.play('open', { vol: 0.6 });
+    this.tune = this.levels.pick(TUNING);
     this.newRound(e);
+  }
+
+  onLevelUp(level, e) {
+    this.tune = this.levels.pick(TUNING);
   }
 
   layout(e) {
     super.layout(e);
-    this.holeR = e.min * (e.portrait ? 0.1 : 0.11);
+    // Board across the top, loose pieces along the bottom. Six holes have to fit
+    // across a phone as comfortably as three do, so the hole size follows the
+    // count rather than only the screen.
+    const n = this.tune.holes;
+    this.holeR = Math.min(e.min * (e.portrait ? 0.1 : 0.11), (e.w / n) * 0.4);
     this.pieceR = this.holeR * 0.86;
-    // Board across the top, loose pieces along the bottom.
-    const n = 4;
     this.boardY = e.h * (e.portrait ? 0.33 : 0.34);
     this.boardH = this.holeR * 3.1;
     // Shorter drag on a tall screen: a two year old's reach is not long.
@@ -142,8 +164,8 @@ export class ShapeScene extends SceneBase {
     this.misses = 0;
     this.done = 0;
     this.roundT = 0;
-    const kinds = shuffled(KINDS).slice(0, 4);
-    const cols = shuffled(COLORS).slice(0, 4);
+    const kinds = shuffled(KINDS).slice(0, this.tune.holes);
+    const cols = shuffled(COLORS).slice(0, this.tune.holes);
     this.holes = kinds.map((k, i) => ({
       kind: k.id, name: k.name, note: k.note, x: 0, y: 0,
       glow: new Spring(0, 200, 14), filled: false, color: cols[i],
@@ -152,7 +174,9 @@ export class ShapeScene extends SceneBase {
     // to work out.
     this.pieces = shuffled(kinds).map((k, i) => {
       const hole = this.holes.find((h) => h.kind === k.id);
-      return new Piece(k.id, hole.color, i);
+      const piece = new Piece(k.id, hole.color, i);
+      piece.rot = rand(-this.tune.tilt, this.tune.tilt);
+      return piece;
     });
     this.layout(e);
   }
@@ -214,7 +238,7 @@ export class ShapeScene extends SceneBase {
 
     const own = this.holes.find((h) => h.kind === pc.kind);
     // Generous: anywhere within three hole radii counts.
-    const snapR = this.holeR * 2.9;
+    const snapR = this.holeR * this.tune.snap;
     if (own && !own.filled && Math.hypot(pc.x - own.x, pc.y - own.y) < snapR) {
       this.place(pc, own, e);
       return;
@@ -261,6 +285,7 @@ export class ShapeScene extends SceneBase {
       this.emiCheer.set(1);
       this.emiCheer.to(0);
       this.reward(e.cx, this.boardY, { stars: 3, big: true });
+      this.scoreLevel(1, e);
       // Short pause to enjoy the finished board, then a fresh set.
       setTimeout(() => {
         if (this.game.engine.scene === this) this.newRound(this.game.engine);

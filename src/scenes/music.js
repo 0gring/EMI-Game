@@ -44,9 +44,25 @@ class Bar {
   }
 }
 
+// Music levels are the songs themselves. Level one is free play - bash the bars
+// until the shape of the thing is clear - and finishing it turns on follow-the-
+// lights with the first tune. Each level after that is the next, slightly longer
+// tune. A wrong bar never fails anything at any level; it just plays its note.
+const TUNING = [
+  { song: -1, hint: 1.4 },    // free play, no song
+  { song: 0, hint: 1.4 },
+  { song: 1, hint: 1.2 },
+  { song: 2, hint: 1.0 },
+];
+
 export class MusicScene extends SceneBase {
   constructor(game) {
-    super(game, { sky: SKIES.music, music: null });
+    super(game, {
+      sky: SKIES.music, music: null, id: 'music', hue: C.indigo,
+      // Level one counts taps; the rest count finished songs.
+      goals: [14, 1, 1, 2],
+    });
+    this.tune = TUNING[0];
     this.bars = SCALE.map((_, i) => new Bar(i));
     this.voice = 0;
     this.mode = 'free';
@@ -67,6 +83,24 @@ export class MusicScene extends SceneBase {
     this.game.music.stop();
     this.audio.play('open', { vol: 0.5 });
     this.audio.arp('xylophone', ['C4', 'E4', 'G4', 'C5'], { step: 0.07, vol: 0.5 });
+    this.applyLevel();
+  }
+
+  // Levels two and up open on their song already lit, so the new thing is
+  // visible the moment the level starts.
+  applyLevel() {
+    this.tune = this.levels.pick(TUNING);
+    if (this.tune.song < 0) {
+      this.mode = 'free';
+    } else {
+      this.mode = 'song';
+      this.song = this.tune.song % SONGS.length;
+      this.step = 0;
+    }
+  }
+
+  onLevelUp(level, e) {
+    this.applyLevel();
   }
 
   exit() {
@@ -150,12 +184,15 @@ export class MusicScene extends SceneBase {
       this.songPress.set(1);
       this.songPress.to(0);
       if (this.mode === 'free') {
+        // Free play is level one's whole job; the button previews a song but
+        // the level still advances on taps.
         this.mode = 'song';
+        this.song = 0;
         this.step = 0;
       } else {
         this.song = (this.song + 1) % SONGS.length;
         this.step = 0;
-        if (this.song === 0) this.mode = 'free';
+        if (this.tune.song < 0 && this.song === 0) this.mode = 'free';
       }
       this.audio.play(this.mode === 'song' ? 'start' : 'toggle-off', { vol: 0.6 });
       p.data = 'ui';
@@ -211,6 +248,7 @@ export class MusicScene extends SceneBase {
     this.emiDance = 1;
 
     if (this.mode === 'song') this.checkSong(b, e);
+    else this.scoreLevel(1, e);   // level one is simply "play with it a while"
   }
 
   checkSong(b, e) {
@@ -232,6 +270,7 @@ export class MusicScene extends SceneBase {
       this.celebrate = 2.6;
       this.reward(e.cx, e.h * 0.45, { stars: 3, big: true });
       this.audio.arp('harp', ['C5', 'E5', 'G5', 'C6', 'E6', 'G6', 'C7'], { step: 0.06, vol: 0.6 });
+      if (this.scoreLevel(1, e)) return;
       this.song = (this.song + 1) % SONGS.length;
     }
   }
@@ -257,7 +296,7 @@ export class MusicScene extends SceneBase {
     // Idle in song mode: play the next note itself so she hears what to do.
     if (this.mode === 'song' && this.idle > 6) {
       const want = SONGS[this.song].notes[this.step];
-      if (want >= 0 && this.songT > 1.4) {
+      if (want >= 0 && this.songT > this.tune.hint) {
         this.songT = 0;
         const b = this.bars[want];
         b.press.set(1);

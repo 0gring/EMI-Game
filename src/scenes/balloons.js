@@ -29,7 +29,7 @@ class Balloon {
     this.r = e.min * rand(0.075, 0.115) * (opts.big ? 1.35 : 1);
     this.x = opts.x ?? rand(this.r * 1.3, e.w - this.r * 1.3);
     this.y = opts.y ?? e.h + this.r * rand(1.2, 3.5);
-    this.vy = -e.min * rand(0.055, 0.1) * (opts.fast ? 1.5 : 1);
+    this.vy = -e.min * rand(0.055, 0.1) * (opts.fast ? 1.5 : 1) * (opts.rise || 1);
     this.ph = rand(10);
     this.sway = rand(0.4, 1.1);
     this.golden = opts.golden || false;
@@ -146,9 +146,23 @@ class Balloon {
   }
 }
 
+// Each level puts more in the sky, rising a little faster, with golden balloons
+// turning up more often. Nothing gets harder to hit: the balloons stay the same
+// size and a miss still costs nothing.
+const TUNING = [
+  { cap: 9, rise: 1.0, gap: [0.45, 1.10], golden: 0.09 },
+  { cap: 12, rise: 1.15, gap: [0.38, 0.90], golden: 0.11 },
+  { cap: 15, rise: 1.3, gap: [0.30, 0.75], golden: 0.13 },
+  { cap: 18, rise: 1.45, gap: [0.24, 0.60], golden: 0.15 },
+];
+
 export class BalloonScene extends SceneBase {
   constructor(game) {
-    super(game, { sky: SKIES.balloons, music: 'play' });
+    super(game, {
+      sky: SKIES.balloons, music: 'play', id: 'balloons', hue: C.red,
+      goals: [8, 12, 16, 20],
+    });
+    this.tune = TUNING[0];
     this.balloons = [];
     this.spawnTimer = 0;
     this.popped = 0;
@@ -162,10 +176,17 @@ export class BalloonScene extends SceneBase {
   enter(e) {
     super.enter();
     this.audio.play('open', { vol: 0.6 });
+    this.tune = this.levels.pick(TUNING);
     // Start with a few already in the air so the screen is never empty.
     for (let i = 0; i < 5; i++) {
-      this.balloons.push(new Balloon(e, { y: e.h * rand(0.35, 1.05) }));
+      this.balloons.push(new Balloon(e, { y: e.h * rand(0.35, 1.05), rise: this.tune.rise }));
     }
+  }
+
+  onLevelUp(level, e) {
+    this.tune = this.levels.pick(TUNING);
+    // The new level arrives as a skyful rather than a number going up.
+    this.startShower(e);
   }
 
   layout(e) {
@@ -242,6 +263,8 @@ export class BalloonScene extends SceneBase {
       }
     }
 
+    if (this.scoreLevel(1, e)) return;   // a level-up throws its own shower
+
     if (this.popped === this.showerAt) {
       this.showerAt += 14;
       this.startShower(e);
@@ -258,6 +281,7 @@ export class BalloonScene extends SceneBase {
         x: rand(e.min * 0.1, e.w - e.min * 0.1),
         y: e.h + e.min * rand(0.1, 1.4),
         fast: true,
+        rise: this.tune.rise,
       }));
     }
     this.p.confetti(e.cx, e.h * 0.5, CONFETTI, 60, e.min * 1.3);
@@ -269,13 +293,13 @@ export class BalloonScene extends SceneBase {
     if (this.shower > 0) this.shower = Math.max(0, this.shower - dt * 0.5);
 
     this.spawnTimer -= dt;
-    const cap = this.shower > 0 ? 26 : 9;
+    const cap = this.shower > 0 ? this.tune.cap + 14 : this.tune.cap;
     if (this.spawnTimer <= 0 && this.balloons.length < cap) {
-      this.spawnTimer = rand(0.45, 1.1);
+      this.spawnTimer = rand(this.tune.gap[0], this.tune.gap[1]);
       // Golden balloons are rare enough to feel like luck, common enough that
       // she will see one in a short sitting.
-      const golden = this.popped > 3 && Math.random() < 0.09;
-      this.balloons.push(new Balloon(e, { golden, big: golden }));
+      const golden = this.popped > 3 && Math.random() < this.tune.golden;
+      this.balloons.push(new Balloon(e, { golden, big: golden, rise: this.tune.rise }));
     }
 
     for (let i = this.balloons.length - 1; i >= 0; i--) {
