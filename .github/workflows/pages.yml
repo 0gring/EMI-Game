@@ -1,14 +1,9 @@
 # Publishes the game to GitHub Pages so it can be opened on a tablet.
 #
-# One manual step is needed once, and only once:
-#   Settings -> Pages -> Source: "GitHub Actions"
-# Then re-run this workflow (Actions tab -> Re-run jobs) or push anything.
-#
-# The enablement flag below asks GitHub to turn Pages on automatically instead,
-# which is the nicer path, but this repository's Actions token is not permitted
-# to create a Pages site ("Resource not accessible by integration"). The flag is
-# kept because it costs nothing and works wherever the token does have that
-# permission.
+# Pages is enabled on this repository with its source set to "GitHub Actions",
+# so every push to the default branch deploys automatically and the site lands
+# at https://0gring.github.io/EMI-Game/ with the standalone single-file copy
+# alongside it at /emi-world.html.
 
 name: Deploy to Pages
 
@@ -52,9 +47,8 @@ jobs:
           cp dist/emi-world.html _site/emi-world.html
           echo "Published $(date -u +%FT%TZ) from ${GITHUB_SHA::7}" > _site/build.txt
 
-      # Tries to turn Pages on over the API. Where the Actions token may not
-      # create a Pages site, this fails until Pages is enabled by hand - see the
-      # note at the top of this file.
+      # enablement asks GitHub to turn Pages on if it ever gets turned off, so
+      # a fresh clone of this repository deploys without a visit to Settings.
       - uses: actions/configure-pages@v5
         with:
           enablement: true

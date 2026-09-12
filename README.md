@@ -15,17 +15,16 @@ Three ways in, in order of least setup:
    game, every sample and both fonts inlined, 2.8MB, no server and no network
    needed. Open it from anywhere, mail it, put it on a USB stick. A test asserts
    the page makes exactly one request: itself.
-2. **GitHub Pages.** Costs one click, once: *Settings → Pages → Source: GitHub
-   Actions*, then re-run the workflow from the Actions tab. After that every
-   push deploys automatically and the game lives at
-   `https://<user>.github.io/EMI-Game/`, with the standalone copy alongside it
-   at `/emi-world.html`. This is the one to add to a tablet's home screen,
-   because the service worker then keeps it working with no signal.
+2. **The published site**, which is the one to open on a tablet:
 
-   The workflow does ask GitHub to enable Pages by itself, but this
-   repository's Actions token is not allowed to create a Pages site
-   (`Resource not accessible by integration`), so the click cannot be
-   automated away.
+   ```
+   https://0gring.github.io/EMI-Game/              the game
+   https://0gring.github.io/EMI-Game/emi-world.html   the standalone copy
+   ```
+
+   Every push deploys it. Add *that* address to the tablet's home screen rather
+   than the single file, because the service worker then keeps the game working
+   with no signal and loads it instantly.
 3. **Locally**, for development — see below.
 
 ## Playing it
@@ -178,6 +177,14 @@ console error, page error or dropped frame rate.
 
 `.github/workflows/pages.yml` deploys on any push to `main` or a `claude/*`
 branch, and can be run by hand from the Actions tab. It checks out, installs,
-builds the standalone file and stages the site — all of which already pass in
-CI — and then stops at `configure-pages` until Pages has been enabled once in
-the repository settings, as described above.
+builds the standalone single file, stages it beside the ES modules and hands
+the lot to Pages, which is configured to take its source from Actions. A
+`build.txt` at the site root carries the timestamp and commit of whatever is
+currently live, which is the quickest way to tell whether a tablet is showing
+a cached copy.
+
+The one thing that is not automatic is the first `Settings → Pages → Source:
+GitHub Actions`: the Actions token may create a deployment but not the Pages
+site itself, so until someone throws that switch once the workflow stops at
+`configure-pages` with `Resource not accessible by integration`. It has been
+thrown here.
