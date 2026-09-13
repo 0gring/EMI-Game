@@ -481,6 +481,37 @@ const rotate = await page.evaluate(async () => {
 });
 rotate.forEach(([id, r]) => check(`${id} survives a relayout`, r === 'ok', r === 'ok' ? '' : r));
 
+// A shake must not be a bare translate of an opaque canvas that nothing clears:
+// that leaves a strip of the previous frame along one edge, and since the
+// offset is random per frame the strip flickers like a badly tuned television.
+// Poison the buffer, draw one frame at full shake, and insist nothing shows
+// through.
+const shakeLeak = await page.evaluate(async () => {
+  const out = [];
+  for (const id of ['balloons', 'animals', 'music', 'shapes', 'paint', 'ocean']) {
+    window.game.goScene(id);
+    await new Promise((r) => setTimeout(r, 260));
+    const e = window.game.engine;
+    const g = e.g;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = '#ff00ff';
+    g.fillRect(0, 0, e.canvas.width, e.canvas.height);
+    const was = e.shake;
+    e.shake = 18;
+    e.draw();
+    e.shake = was;
+    const px = g.getImageData(0, 0, e.canvas.width, e.canvas.height).data;
+    let leaked = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i] > 240 && px[i + 1] < 40 && px[i + 2] > 240) leaked++;
+    }
+    out.push([id, leaked]);
+  }
+  return out;
+});
+shakeLeak.forEach(([id, leaked]) =>
+  check(`${id} repaints every pixel while shaking`, leaked === 0, `${leaked} px of the previous frame left showing`));
+
 // The whole point of the one-file build is that it needs nothing else. Prove
 // it: the document itself should be the only thing the page ever asks for.
 if (BUNDLE) {

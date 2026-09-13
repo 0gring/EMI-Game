@@ -13,7 +13,12 @@ import { clamp } from './util.js';
 export class Engine {
   constructor(canvas) {
     this.canvas = canvas;
-    this.g = canvas.getContext('2d', { alpha: false, desynchronized: true });
+    // No desynchronized:true. It is a low-latency hint that lets the browser
+    // present the canvas without waiting for the compositor, and on tablet GPUs
+    // that means a half-drawn frame reaches the screen - seen as tearing and
+    // flicker. The game runs on requestAnimationFrame and does not need the
+    // millisecond it buys.
+    this.g = canvas.getContext('2d', { alpha: false });
     this.dpr = 1;
     this.w = 0;
     this.h = 0;
@@ -258,10 +263,20 @@ export class Engine {
     const g = this.g;
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     if (this.shake > 0) {
+      // A shake cannot be a bare translate. The canvas is opaque and nothing
+      // clears it, so shifting the frame leaves a strip of the PREVIOUS frame
+      // showing along one edge - and because the offset is random per frame,
+      // that strip flickers like a badly tuned television. Scaling up about
+      // the centre by just enough to cover the largest offset means the
+      // shifted frame still reaches every edge. min/2 is the smaller half-axis,
+      // so (s-1)*min/2 >= shake/2 is what has to hold.
+      const s = 1 + this.shake / this.min;
       g.translate(
-        (Math.random() - 0.5) * this.shake,
-        (Math.random() - 0.5) * this.shake
+        this.cx + (Math.random() - 0.5) * this.shake,
+        this.cy + (Math.random() - 0.5) * this.shake
       );
+      g.scale(s, s);
+      g.translate(-this.cx, -this.cy);
     }
     this.scene?.draw?.(g, this);
     if (this.fade > 0) {

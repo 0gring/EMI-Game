@@ -87,8 +87,10 @@
     font-size: 11px;
     font-weight: 700;
     color: #6b5b7a;
-    background: rgba(255, 255, 255, 0.45);
-    backdrop-filter: blur(4px);
+    /* No backdrop-filter. Blurring what is behind an element forces the
+       compositor to re-sample the canvas underneath it on every one of the
+       game's 60 frames a second, which on a tablet GPU shows up as stutter. */
+    background: rgba(255, 255, 255, 0.62);
     opacity: 0.42;
   }
   #full:active { transform: scale(0.95); }

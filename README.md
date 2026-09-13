@@ -1,5 +1,7 @@
 # עולם של אמי — Emi's World
 
+### ▶ Play it: **https://0gring.github.io/EMI-Game/**
+
 A touch game for a two-year-old. Six activities, no score to lose, no timers,
 nothing that can be failed. Runs in any modern browser on a tablet, a phone or
 a computer, and keeps working with no signal once it has been opened once.
@@ -92,6 +94,15 @@ These are the reasons behind most of the code:
   plays a note. A screen that ignores a toddler loses her.
 - **All ten fingers work.** A two-year-old plants a palm on the glass, so the
   engine tracks every pointer rather than one cursor.
+- **Nothing flickers.** The canvas is opaque and nothing clears it, so any
+  frame that fails to repaint every pixel leaves part of the previous frame
+  showing - and during a screen shake, whose offset is random per frame, that
+  strip strobes like a badly tuned television. The shake therefore scales up
+  about the centre by exactly enough to cover its own largest offset, the
+  context does not ask for `desynchronized` (a low-latency hint that lets a
+  half-drawn frame reach the screen), and nothing is layered over the canvas
+  with a `backdrop-filter`. `tools/flicker-probe.mjs` poisons the buffer and
+  counts pixels a shaken frame failed to cover; the test suite asserts zero.
 - **Nothing sounds wrong.** Instruments are tuned to pentatonic and major
   scales, so mashing produces music. The soundtrack ducks under a reward instead
   of fighting it, and the output cannot clip: a limiter catches peaks and a
@@ -152,9 +163,9 @@ slow frames.
 
 ```
 npm start            # local server, prints the address to use on a tablet
-npm test             # 68 functional checks in real Chromium
+npm test             # 74 functional checks in real Chromium
 npm run lint         # catches typo'd identifiers and leftover variables
-npm run test:bundle  # the same checks against the single-file build (69)
+npm run test:bundle  # the same checks against the single-file build (75)
 npm run verify       # screenshots every scene at four sizes, fails on any error
 npm run bundle       # dist/emi-world.html, the standalone copy
 npm run profile      # per-scene frame rate
@@ -162,12 +173,14 @@ node tools/stress.mjs         # frame rate with the particle pool full
 node tools/make-icons.mjs     # re-render the PNG icons from icon.svg
 node tools/shrink-audio.mjs   # re-trim and re-encode the samples (--write)
 node tools/audio-headroom.mjs # render the audio graph offline, measure clipping
+node tools/flicker-probe.mjs  # frame-time spikes, and pixels a shaken frame missed
 ```
 
 `npm test` drives the actual game — it pops a balloon and asserts a star was
 awarded, drags a shape and asserts it snapped, checks that a wrong bar cannot
 fail the song, that a quick tap on home does not exit but a hold does, and that
-the audio samples really decoded. It also walks every activity through all four
+the audio samples really decoded, and that a frame drawn mid-shake repaints
+every last pixel. It also walks every activity through all four
 levels, asserting each one measurably changes that activity's tuning, that four
 is really the ceiling, and that levels survive closing the game. `npm run verify` catches layout problems by
 walking every scene at tablet, phone and desktop sizes and failing on any
