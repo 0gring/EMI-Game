@@ -48,7 +48,8 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
+      # No SDK setup step: the hosted runner already has the Android SDK with its
+      # licences accepted (ANDROID_HOME), and Gradle fetches any missing platform.
 
       # The app is the standalone single-file game wrapped for a WebView;
       # build-app also runs `cap sync`, which copies it into the Android
