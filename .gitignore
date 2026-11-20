@@ -3,3 +3,4 @@ tools/shots/
 _site/
 .DS_Store
 dist/
+app/www/

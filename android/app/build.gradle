@@ -1,0 +1,72 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace = "com.emigame.magicisland"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.emigame.magicisland"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // CI passes its run number, so every published APK installs over the last.
+        versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger())
+        versionName "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    // One fixed key for every build, committed on purpose. Android only lets an
+    // update install over an app signed with the same key; CI machines would
+    // otherwise sign each build with a fresh throwaway key and every update
+    // would need an uninstall first - wiping her stars. This is a sideloaded
+    // family app, not a store listing, so the key guards nothing secret.
+    signingConfigs {
+        island {
+            storeFile file('emi-island.keystore')
+            storePassword 'emi-island'
+            keyAlias 'emi'
+            keyPassword 'emi-island'
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.island
+        }
+        release {
+            signingConfig signingConfigs.island
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

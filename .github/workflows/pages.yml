@@ -41,10 +41,12 @@ jobs:
       - name: Stage the site
         run: |
           mkdir -p _site
-          cp -r index.html manifest.webmanifest sw.js src assets _site/
+          cp -r index.html manifest.webmanifest adventure.html adventure.webmanifest sw.js src assets _site/
           npm ci
           node tools/bundle.mjs
+          node tools/bundle.mjs --adventure
           cp dist/emi-world.html _site/emi-world.html
+          cp dist/emi-adventure.html _site/emi-adventure.html
           echo "Published $(date -u +%FT%TZ) from ${GITHUB_SHA::7}" > _site/build.txt
 
       # enablement asks GitHub to turn Pages on if it ever gets turned off, so

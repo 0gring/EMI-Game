@@ -9,6 +9,59 @@ a computer, and keeps working with no signal once it has been opened once.
 Everything is Hebrew and right-to-left. The child needs no reading: the words
 are there for the grown-up and for hearing a name spoken alongside a picture.
 
+## The second game: האי הקסום של אמי — Emi's Magic Island
+
+A new game for a three-year-old, on the same engine: an island in the sea with
+six magical places, each a step up from the toddler activities below. It asks
+her to *think* a little — match, count, choose, build — but keeps the same
+rule that nothing can be failed.
+
+**Install it on an Android tablet** (the best way to play it):
+
+1. On the tablet, open
+   **https://github.com/0gring/EMI-Game/releases/download/android-latest/emi-magic-island.apk**
+2. Chrome asks once whether it may install apps — allow it, then tap *Install*.
+3. "האי של אמי" appears on the home screen with the castle icon.
+
+The app runs full screen with the status and navigation bars hidden, keeps the
+screen awake, works with no internet at all, speaks Hebrew through the
+tablet's own text-to-speech voice, and the system back button returns to the
+island instead of closing the game. Every build is signed with the same key and
+numbered higher, so a newer APK installs straight over the old one and her
+stars are kept. It is also playable in a browser at `adventure.html` (or
+`npm start` → `/adventure.html`), and as one standalone file:
+`npm run island:bundle` → `dist/emi-adventure.html`.
+
+| | Place | What she does | What it is for |
+| --- | --- | --- | --- |
+| 🎂 | **עוגה** Cake | Picks a sponge, an icing, decorates with fruit, hearts and sprinkles (tap, or drag to an exact spot), then blows out three candles and gets "Happy Birthday" | choosing, cause and effect, a story with a beginning and an end |
+| 🧩 | **פאזל** Puzzle | Real jigsaw pieces with tabs, a faint ghost picture to match against; the finished picture comes alive and says its name | visual matching, fine motor control |
+| 🃏 | **זיכרון** Memory | Find the pairs. Every board starts with a peek at all the cards | memory, and an animal word for every card turned |
+| 🐰 | **חיות רעבות** Hungry animals | An animal wants N things; she feeds it and every bite is counted aloud — "אחת, שתיים, שלוש" | counting, one-to-one correspondence, Hebrew numbers |
+| 🖍️ | **צביעה** Colouring | Pick a crayon, touch a region, the colour spreads from her finger and never leaves the lines | colour names, finishing a picture |
+| 🌻 | **גינה** Garden | Plant seeds, water them, watch them grow; the rain cloud waters everything; every flower brings a butterfly or a bee | patience, growth, colours |
+
+Each place has four levels, shown as four stars on its medallion: bigger cakes
+and more toppings, puzzles from 4 to 12 pieces, memory from 4 to 12 cards,
+counting up to 10, more pictures with rainbow and gold crayons, gardens of up to
+six beds with roses and glowing star-flowers.
+
+```
+src/adventure/main.js        the second game's entry point
+src/adventure/scenes/        title, island map and the six places
+src/adventure/art.js         food, flowers, cake parts, crayons, glows
+src/adventure/scenery.js     sea, island, castle, palms, balloon, boat
+src/adventure/speech.js      Hebrew speech: native TTS in the app, Web Speech in a browser
+android/                     the Capacitor Android project
+tools/build-app.mjs          single-file build -> app/www -> cap sync
+tools/adventure-shots.mjs    plays every place to the end in Chromium, screenshots, fails on any error
+tools/make-island-icons.mjs  renders the app icon from the game's own art
+.github/workflows/android.yml  builds the APK and publishes it as the android-latest release
+```
+
+To build the APK yourself you need the Android SDK and JDK 21:
+`npm ci && npm run app && cd android && ./gradlew assembleRelease`.
+
 ## Getting to it
 
 Three ways in, in order of least setup:

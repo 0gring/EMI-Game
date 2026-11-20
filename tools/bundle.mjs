@@ -2,7 +2,8 @@
 // font inlined. The result needs no server, no network and no unpacking - one
 // file you can open from a USB stick, mail to someone, or publish anywhere.
 //
-//   node tools/bundle.mjs        -> dist/emi-world.html
+//   node tools/bundle.mjs              -> dist/emi-world.html      (Emi's World)
+//   node tools/bundle.mjs --adventure  -> dist/emi-adventure.html  (Emi's Magic Island)
 
 import { build } from 'esbuild';
 import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises';
@@ -11,10 +12,18 @@ import { join, resolve, relative } from 'node:path';
 const ROOT = resolve(import.meta.dirname, '..');
 const OUT = join(ROOT, 'dist');
 
+// Two games share the engine, the samples and the fonts; only the entry point,
+// the title and the colour behind the canvas differ.
+const GAMES = {
+  world: { entry: 'src/main.js', title: 'עולם של אמי', bg: '#8fdcff', out: 'emi-world.html' },
+  adventure: { entry: 'src/adventure/main.js', title: 'האי הקסום של אמי', bg: '#ffd6ea', out: 'emi-adventure.html' },
+};
+const GAME = GAMES[process.argv.includes('--adventure') ? 'adventure' : 'world'];
+
 // --- 1. bundle the game code ------------------------------------------------
 
 const result = await build({
-  entryPoints: [join(ROOT, 'src/main.js')],
+  entryPoints: [join(ROOT, GAME.entry)],
   bundle: true,
   format: 'iife',
   target: ['es2021'],
@@ -70,10 +79,10 @@ const fonts = (await Promise.all([
 // Body content only, no <html>/<head>/<body>: this file is also published as an
 // Artifact, which supplies its own document shell.
 
-const html = `<title>עולם של אמי</title>
+const html = `<title>${GAME.title}</title>
 <style>
 ${fonts}
-html,body{height:100%;width:100%;margin:0;overflow:hidden;background:#8fdcff;
+html,body{height:100%;width:100%;margin:0;overflow:hidden;background:${GAME.bg};
   font-family:'Varela Round','Arial Hebrew',system-ui,sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   -webkit-tap-highlight-color:transparent;touch-action:none;overscroll-behavior:none}
@@ -129,7 +138,7 @@ document.documentElement.dir = 'rtl';
 `;
 
 await mkdir(OUT, { recursive: true });
-const outFile = join(OUT, 'emi-world.html');
+const outFile = join(OUT, GAME.out);
 await writeFile(outFile, html);
 
 const mb = (n) => `${(n / 1024 / 1024).toFixed(2)}MB`;

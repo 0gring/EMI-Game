@@ -390,6 +390,18 @@ const SONGS = {
     chords: [['C3', 'G3', 'C4'], ['F3', 'A3', 'C4'], ['G3', 'B3', 'D4'], ['C3', 'E3', 'G3']],
     melody: ['C5', 'E5', 'G5', 'E5', 'A5', 'G5', 'E5', 'D5', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6', 'A5', 'G5'],
   },
+  // Emi's Magic Island (src/adventure). A lilting tune for the map, and a
+  // gentle, bright one for the activities that ask her to think a little.
+  island: {
+    bpm: 88, inst: 'harp', bass: 'piano', lead: 'flute',
+    chords: [['F3', 'A3', 'C4'], ['D3', 'F3', 'A3'], ['A#2', 'D3', 'F3'], ['C3', 'E3', 'G3']],
+    melody: ['C5', 'F5', 'A5', 'G5', 'F5', 'D5', 'F5', 'A5', 'A#5', 'A5', 'F5', 'D5', 'C5', 'D5', 'E5', 'G5'],
+  },
+  think: {
+    bpm: 92, inst: 'harp', bass: 'piano', lead: 'xylophone',
+    chords: [['G3', 'B3', 'D4'], ['E3', 'G3', 'B3'], ['C3', 'E3', 'G3'], ['D3', 'F#3', 'A3']],
+    melody: ['D5', 'G5', 'B5', 'A5', 'G5', 'E5', 'G5', 'B5', 'C6', 'B5', 'G5', 'E5', 'D5', 'E5', 'F#5', 'A5'],
+  },
   calm: {
     bpm: 68, inst: 'harp', bass: 'harp', lead: 'flute',
     chords: [['C3', 'E3', 'G3'], ['F3', 'A3', 'C4'], ['A2', 'C3', 'E3'], ['G3', 'B3', 'D4']],

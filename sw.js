@@ -35,6 +35,22 @@ const SHELL_FILES = [
   './src/scenes/shapes.js',
   './src/scenes/paint.js',
   './src/scenes/ocean.js',
+  // Emi's Magic Island, the second game
+  './adventure.html',
+  './adventure.webmanifest',
+  './assets/island-192.png',
+  './src/adventure/main.js',
+  './src/adventure/speech.js',
+  './src/adventure/art.js',
+  './src/adventure/scenery.js',
+  './src/adventure/scenes/title.js',
+  './src/adventure/scenes/island.js',
+  './src/adventure/scenes/cake.js',
+  './src/adventure/scenes/puzzle.js',
+  './src/adventure/scenes/memory.js',
+  './src/adventure/scenes/feed.js',
+  './src/adventure/scenes/coloring.js',
+  './src/adventure/scenes/garden.js',
 ];
 
 self.addEventListener('install', (e) => {
@@ -86,6 +102,7 @@ self.addEventListener('fetch', (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
+      .catch(() => caches.match(req).then((hit) => hit
+        || caches.match(url.pathname.endsWith('adventure.html') ? './adventure.html' : './index.html')))
   );
 });

@@ -1,0 +1,15 @@
+{
+  "appId": "com.emigame.magicisland",
+  "appName": "האי הקסום של אמי",
+  "webDir": "app/www",
+  "backgroundColor": "#ffd6ea",
+  "android": {
+    "backgroundColor": "#ffd6ea",
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0 }
+  }
+}

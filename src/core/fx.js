@@ -276,6 +276,20 @@ export class Particles {
           g.fill();
           break;
         }
+        case 'heart': {
+          // Floats up and sways; used when a fed animal is happy.
+          g.globalAlpha = Math.min(1, t * 1.6);
+          g.translate(p.x, p.y);
+          g.rotate(Math.sin(p.rot) * 0.3);
+          const s = p.size * (1.1 - t * 0.2);
+          g.fillStyle = p.color;
+          g.beginPath();
+          g.moveTo(0, s * 0.32);
+          g.bezierCurveTo(-s * 1.25, -s * 0.5, -s * 0.5, -s * 1.2, 0, -s * 0.45);
+          g.bezierCurveTo(s * 0.5, -s * 1.2, s * 1.25, -s * 0.5, 0, s * 0.32);
+          g.fill();
+          break;
+        }
         case 'puff': {
           g.globalAlpha = t * 0.55;
           g.fillStyle = p.color;
