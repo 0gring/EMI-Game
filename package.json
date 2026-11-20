@@ -12,13 +12,23 @@
     "icons": "node tools/make-icons.mjs",
     "bundle": "node tools/bundle.mjs",
     "test:bundle": "node tools/bundle.mjs && node tools/test.mjs --bundle",
-    "lint": "eslint src sw.js tools"
+    "lint": "eslint src sw.js tools",
+    "island": "node tools/adventure-shots.mjs",
+    "island:bundle": "node tools/bundle.mjs --adventure && node tools/adventure-shots.mjs --bundle",
+    "app": "node tools/build-app.mjs"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
     "audio-decode": "^3.12.0",
     "esbuild": "^0.28.2",
+    "eslint": "^10.1.0",
     "lamejs": "^1.2.1",
-    "playwright": "1.56.1",
-    "eslint": "^10.1.0"
+    "playwright": "1.56.1"
+  },
+  "dependencies": {
+    "@capacitor-community/text-to-speech": "^8.0.2",
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.2"
   }
 }

@@ -1,0 +1,83 @@
+# Builds "האי הקסום של אמי" as an installable Android app (APK) and publishes
+# it as the release "android-latest", so the newest build is always at:
+#
+#   https://github.com/0gring/EMI-Game/releases/download/android-latest/emi-magic-island.apk
+#
+# Open that link on the tablet, allow installing from the browser once, and
+# tap Install. Every build is signed with the same key (android/app/
+# emi-island.keystore) and carries a higher version number, so a newer APK
+# installs straight over the old one and keeps her stars.
+
+name: Android app
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'assets/**'
+      - 'android/**'
+      - 'adventure.html'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tools/bundle.mjs'
+      - 'tools/build-app.mjs'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      # The app is the standalone single-file game wrapped for a WebView;
+      # build-app also runs `cap sync`, which copies it into the Android
+      # project and wires up the speech and back-button plugins.
+      - name: Build the game for the app
+        run: |
+          npm ci
+          node tools/build-app.mjs
+
+      - name: Build the APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Collect the APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk emi-magic-island.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: emi-magic-island-apk
+          path: emi-magic-island.apk
+
+      - name: Publish the download link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest --yes --cleanup-tag || true
+          gh release create android-latest emi-magic-island.apk \
+            --target "$GITHUB_SHA" \
+            --title "האי הקסום של אמי - Android" \
+            --notes "Build ${GITHUB_RUN_NUMBER} from ${GITHUB_SHA::7} (${GITHUB_REF_NAME}). Open this page on the tablet and tap emi-magic-island.apk to install."

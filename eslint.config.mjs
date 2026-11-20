@@ -12,7 +12,8 @@ const browser = {
   clearInterval: 'readonly', console: 'readonly', fetch: 'readonly', atob: 'readonly',
   btoa: 'readonly', Image: 'readonly', caches: 'readonly', self: 'readonly',
   AudioContext: 'readonly', OfflineAudioContext: 'readonly', PointerEvent: 'readonly',
-  URL: 'readonly', globalThis: 'readonly',
+  URL: 'readonly', globalThis: 'readonly', Path2D: 'readonly',
+  SpeechSynthesisUtterance: 'readonly',
 };
 
 const node = {
