@@ -18,6 +18,7 @@ import { MemoryScene } from './scenes/memory.js';
 import { FeedScene } from './scenes/feed.js';
 import { ColoringScene } from './scenes/coloring.js';
 import { GardenScene } from './scenes/garden.js';
+import { Magic } from './magic.js';
 
 export const SCENES = {
   cake: CakeScene,
@@ -44,6 +45,11 @@ class Game {
         this.music.play(this.engine.scene?.musicName || 'island');
       }
     };
+
+    // Light above every scene, and the sparkling iris between scenes.
+    this.magic = new Magic(this);
+    this.engine.overlay = this.magic;
+    this.engine.fadeDraw = (g, e, f) => this.magic.drawTransition(g, e, f);
 
     this.engine.setScene(new TitleScene(this));
     this.engine.start();

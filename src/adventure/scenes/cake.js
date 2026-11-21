@@ -14,7 +14,7 @@
 import { TAU, Spring, rand, pick, clamp, ease, lerp, Schedule } from '../../core/util.js';
 import { C, CONFETTI } from '../../core/palette.js';
 import { circle, label, radial, lighten, darken, roundRect, verticalGradient } from '../../core/gfx.js';
-import { SceneBase } from '../../core/ui.js';
+import { IslandBase } from '../base.js';
 import { drawEmi, EMI_FEET, LAND } from '../../core/creatures.js';
 import { drawTier, drawCandle, TOPPINGS, SPONGES, ICINGS, sprinkle, SPRINKLE_COLORS, glow, rays, card } from '../art.js';
 import { speak } from '../speech.js';
@@ -41,7 +41,7 @@ const SONG = [
   ['F5', 0.75], ['F5', 0.25], ['E5', 1], ['C5', 1], ['D5', 1], ['C5', 3],
 ];
 
-export class CakeScene extends SceneBase {
+export class CakeScene extends IslandBase {
   constructor(game) {
     super(game, { sky: SKY, music: 'play', id: 'cake', hue: '#ff5fa2', goals: [1, 2, 2, 2] });
     this.sched = new Schedule();
@@ -321,6 +321,7 @@ export class CakeScene extends SceneBase {
     this.audio.note('xylophone', ['C6', 'D6', 'E6', 'G6', 'A6', 'C7'][this.placed % 6], { vol: 0.5 });
     speak(f.top.name, { music: this.game.music });
     this.p.sparkle(f.tx, f.ty, ['#fff', C.yellow], 8, e.min * 0.08);
+    this.game.magic?.burst(f.tx, f.ty, { n: 12, power: 0.35 });
     this.score(e, f.tx, f.ty);
   }
 

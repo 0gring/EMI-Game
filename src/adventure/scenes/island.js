@@ -8,11 +8,12 @@
 import { TAU, Spring, rand, clamp, ease, lerp } from '../../core/util.js';
 import { C, CONFETTI } from '../../core/palette.js';
 import { circle, label, sun, cloud, radial, lighten, darken, groundShadow, roundRect, star as starPath, rainbow, verticalGradient, flower } from '../../core/gfx.js';
-import { SceneBase } from '../../core/ui.js';
+import { IslandBase } from '../base.js';
 import { drawEmi, EMI_FEET, LAND } from '../../core/creatures.js';
 import { levelOf, MAX_LEVEL } from '../../core/levels.js';
-import { ISLAND_SKY, paintSea, paintIsland, palm, castle, shoreWaves, hotAirBalloon, boat, gull, makeMotes, drawMotes } from '../scenery.js';
-import { glow, rays, drawTier, drawCandle, drawBloom, drawCarrot, PAINTS } from '../art.js';
+import { ISLAND_SKY, paintSea, paintIsland, palm, castle, shoreWaves, hotAirBalloon, boat, gull, makeMotes, drawMotes,
+  seaGlints, sunBeams, dolphin, butterfly } from '../scenery.js';
+import { glow, rays, twinkle, drawTier, drawCandle, drawBloom, drawCarrot, PAINTS } from '../art.js';
 import { speak } from '../speech.js';
 
 export const PLACES = [
@@ -151,7 +152,7 @@ function iconGarden(g, t) {
 
 const ICONS = { cake: iconCake, puzzle: iconPuzzle, memory: iconMemory, feed: iconFeed, coloring: iconColoring, garden: iconGarden };
 
-export class IslandScene extends SceneBase {
+export class IslandScene extends IslandBase {
   constructor(game) {
     super(game, { sky: ISLAND_SKY, music: 'island', home: false });
     this.nodes = PLACES.map((pl, i) => ({
@@ -165,6 +166,29 @@ export class IslandScene extends SceneBase {
     this.emi = { x: 0, y: 0, fx: 0, fy: 0, tx: 0, ty: 0, k: 1, jump: new Spring(0, 200, 11) };
     this.going = null;
     this.goT = 0;
+    // A dolphin leaps out of the sea every few seconds, somewhere new each time.
+    this.dolphin = { k: -1, next: 2.5 };
+    this.flies = Array.from({ length: 3 }, (_, i) => ({ ph: rand(10), c: ['#ff85c8', '#ffd93d', '#9fd8ff'][i], a: rand(TAU) }));
+  }
+
+  // A leap that stays in open water: start and end both clear of the island.
+  newLeap(e) {
+    const I = this.isl;
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    const span = e.min * 0.22;
+    const roomBelow = I.cy + I.ry * 1.2 < e.h - e.min * 0.06;
+    let x0, y0;
+    if (roomBelow && Math.random() < 0.5) {
+      x0 = rand(e.w * 0.15, e.w * 0.85 - span);
+      y0 = rand(I.cy + I.ry * 1.22, e.h - e.min * 0.03);
+    } else {
+      const left = Math.random() < 0.5;
+      x0 = left ? rand(e.w * 0.02, Math.max(e.w * 0.03, I.cx - I.rx * 1.12 - span))
+        : rand(Math.min(e.w * 0.97 - span, I.cx + I.rx * 1.12), e.w * 0.97 - span);
+      y0 = rand(this.horizon + e.min * 0.1, this.horizon + (e.h - this.horizon) * 0.3);
+    }
+    Object.assign(this.dolphin, { k: 0, x0: dir > 0 ? x0 : x0 + span, y0, dir, span, h: e.min * 0.14, splashed: false });
+    this.p.splash(this.dolphin.x0, y0, '#d8f4ff', 10);
   }
 
   enter() {
@@ -299,6 +323,19 @@ export class IslandScene extends SceneBase {
         if (id) this.game.goScene(id);
       }
     }
+    const d = this.dolphin;
+    if (d.k < 0) {
+      d.next -= dt;
+      if (d.next <= 0) this.newLeap(e);
+    } else {
+      d.k += dt / 1.3;
+      if (d.k > 0.92 && !d.splashed) {
+        d.splashed = true;
+        this.p.splash(d.x0 + d.dir * d.span, d.y0, '#d8f4ff', 14);
+        this.audio.play('drop', { vol: 0.3 });
+      }
+      if (d.k >= 1) { d.k = -1; d.next = rand(4, 7); }
+    }
     for (const c of this.clouds) {
       c.x += c.v * dt;
       if (c.x > 1.3) c.x = -0.3;
@@ -317,6 +354,7 @@ export class IslandScene extends SceneBase {
   draw(g, e) {
     const t = this.t;
     this.drawBackdrop(g, e);
+    sunBeams(g, e.w * 0.1, this.horizon * 0.45, e.max * 0.5, t);
     sun(g, e.w * 0.1, this.horizon * 0.45, e.min * 0.055, t);
     for (const c of this.clouds) {
       g.save();
@@ -330,6 +368,19 @@ export class IslandScene extends SceneBase {
     hotAirBalloon(g, e.w * 0.9, this.horizon * 0.55 + e.min * 0.05, e.min * 0.06, t);
     const I = this.isl;
     boat(g, e.w * 0.08 + Math.sin(t * 0.1) * e.w * 0.02, Math.min(e.h - e.min * 0.06, I.cy + I.ry * 1.08), e.min * 0.05, t);
+    seaGlints(g, e, this.horizon, t);
+    const dl = this.dolphin;
+    if (dl.k >= 0) {
+      // position along a parabola, nose following the direction of travel
+      const x = dl.x0 + dl.dir * dl.span * dl.k;
+      const y = dl.y0 - Math.sin(dl.k * Math.PI) * dl.h;
+      const rot = Math.atan2(-Math.cos(dl.k * Math.PI) * Math.PI * dl.h, dl.span);
+      g.save();
+      g.translate(x, y);
+      g.scale(dl.dir, 1);
+      dolphin(g, 0, 0, e.min * 0.06, rot);
+      g.restore();
+    }
     shoreWaves(g, I.cx, I.cy, I.rx, I.ry, t);
 
     // Emi, drawn before the medallions so a place she skips toward stays on top.
@@ -344,6 +395,12 @@ export class IslandScene extends SceneBase {
     const hint = this.idle > 4 ? this.nodes[Math.floor(this.t / 3) % this.nodes.length] : null;
     for (const n of this.nodes) this.drawNode(g, e, n, t, n === hint);
 
+    for (const f of this.flies) {
+      const a = t * 0.35 + f.a;
+      const x = I.cx + Math.cos(a) * I.rx * 0.75 + Math.sin(t * 1.7 + f.ph) * e.min * 0.04;
+      const y = I.cy + Math.sin(a * 1.3) * I.ry * 0.7 + Math.cos(t * 2.3 + f.ph) * e.min * 0.03;
+      butterfly(g, x, y, e.min * 0.02, t, f.c, f.ph);
+    }
     drawMotes(g, e, this.motes, t);
     this.p.draw(g);
     this.drawHud(g, e);
@@ -375,6 +432,27 @@ export class IslandScene extends SceneBase {
     g.scale(r * 0.8, r * 0.8);
     ICONS[n.id](g, t + n.i);
     g.restore();
+    // a band of light sweeps across each medallion now and then
+    const sw = ((t * 0.35 + n.i * 0.17) % 1) * 3 - 1;
+    if (sw > -0.6 && sw < 1.6) {
+      g.save();
+      circle(g, 0, 0, r * 0.98);
+      g.clip();
+      g.rotate(-0.6);
+      const bx = (sw - 0.5) * r * 2.4;
+      const sg = g.createLinearGradient(bx - r * 0.3, 0, bx + r * 0.3, 0);
+      sg.addColorStop(0, 'rgba(255,255,255,0)');
+      sg.addColorStop(0.5, 'rgba(255,255,255,0.55)');
+      sg.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = sg;
+      g.fillRect(bx - r * 0.3, -r * 1.5, r * 0.6, r * 3);
+      g.restore();
+    }
+    for (let k = 0; k < 2; k++) {
+      const a = t * (1.1 + n.i * 0.07) + k * Math.PI + n.i;
+      const ss = r * (0.1 + 0.05 * Math.sin(t * 5 + k + n.i));
+      twinkle(g, Math.cos(a) * r * 1.12, Math.sin(a) * r * 1.12, ss, k ? '#fff6c0' : '#ffffff');
+    }
     // gloss
     g.fillStyle = 'rgba(255,255,255,0.35)';
     g.beginPath();

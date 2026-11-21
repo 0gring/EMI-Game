@@ -14,7 +14,7 @@
 import { Spring, rand, clamp, lerp, shuffled, Schedule } from '../../core/util.js';
 import { C, CONFETTI } from '../../core/palette.js';
 import { circle, label, verticalGradient, sun, hill, cloud, rainbow } from '../../core/gfx.js';
-import { SceneBase } from '../../core/ui.js';
+import { IslandBase } from '../base.js';
 import { LAND, SEA } from '../../core/creatures.js';
 import { glow, rays, card } from '../art.js';
 import { speak } from '../speech.js';
@@ -132,7 +132,7 @@ function piecePath(g, L, tabs) {
   g.closePath();
 }
 
-export class PuzzleScene extends SceneBase {
+export class PuzzleScene extends IslandBase {
   constructor(game) {
     super(game, { sky: SKY, music: 'think', id: 'puzzle', hue: '#ff9a1f', goals: [2, 2, 2, 3] });
     this.sched = new Schedule();
@@ -365,6 +365,7 @@ export class PuzzleScene extends SceneBase {
     this.audio.note('xylophone', ['C5', 'D5', 'E5', 'G5', 'A5', 'C6', 'D6', 'E6', 'G6', 'A6', 'C7', 'D7'][n - 1] || 'C7', { vol: 0.55 });
     this.p.sparkle(pc.hx, pc.hy, ['#fff', C.yellow, '#ffe0a0'], 12, this.L * 0.6);
     this.p.ring(pc.hx, pc.hy, '#ffffff', this.L * 0.5, 0.45);
+    this.game.magic?.burst(pc.hx, pc.hy, { n: 18, power: 0.5 });
     if (n === this.pieces.length) this.complete(e);
   }
 

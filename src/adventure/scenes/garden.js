@@ -13,7 +13,7 @@
 import { TAU, Spring, rand, pick, clamp, ease, lerp, Schedule } from '../../core/util.js';
 import { C, CONFETTI } from '../../core/palette.js';
 import { circle, radial, lighten, darken, roundRect, verticalGradient, hill, sun, cloud, rainbow, groundShadow } from '../../core/gfx.js';
-import { SceneBase } from '../../core/ui.js';
+import { IslandBase } from '../base.js';
 import { byId, drawEmi, EMI_FEET } from '../../core/creatures.js';
 import { drawBloom, PAINTS, glow, rays } from '../art.js';
 import { speak } from '../speech.js';
@@ -63,7 +63,7 @@ function drawButterfly(g, t, color, ph) {
   g.restore();
 }
 
-export class GardenScene extends SceneBase {
+export class GardenScene extends IslandBase {
   constructor(game) {
     super(game, { sky: SKY, music: 'calm', id: 'garden', hue: '#f2b81f', goals: [1, 2, 2, 2] });
     this.sched = new Schedule();
@@ -256,6 +256,7 @@ export class GardenScene extends SceneBase {
     const top = pl.y - this.plantH;
     this.p.sparkle(pl.x, top, ['#fff', pl.col.c, C.yellow], 18, this.pw * 0.8);
     this.p.ring(pl.x, top, '#ffffff', this.pw * 0.5, 0.5);
+    this.game.magic?.burst(pl.x, top, { n: 22, power: 0.6, colors: [pl.col.c === '#ffffff' ? '#fff3a0' : pl.col.c, '#ffffff', '#ffd93d'] });
     this.audio.play('chime', { vol: 0.6 });
     this.audio.arp('xylophone', ['G5', 'C6', 'E6', 'G6'], { step: 0.05, vol: 0.45 });
     speak(`פרח ${pl.col.name}`, { music: this.game.music });

@@ -11,8 +11,7 @@ import { Particles } from '../../core/fx.js';
 import { drawEmi, EMI_FEET } from '../../core/creatures.js';
 import { state } from '../../core/state.js';
 import {
-  ISLAND_SKY, paintSea, paintIsland, palm, castle, shoreWaves, hotAirBalloon, boat, makeMotes, drawMotes,
-} from '../scenery.js';
+  ISLAND_SKY, paintSea, paintIsland, palm, castle, shoreWaves, hotAirBalloon, boat, makeMotes, drawMotes, seaGlints, sunBeams } from '../scenery.js';
 import { glow, twinkle } from '../art.js';
 import { speak } from '../speech.js';
 
@@ -88,6 +87,7 @@ export class TitleScene {
     this.game.music.play('island');
     bus.arp('harp', ['F5', 'A5', 'C6', 'F6', 'A6', 'C7'], { step: 0.08, vol: 0.6 });
     speak('האי הקסום של אמי', { music: this.game.music });
+    this.game.magic?.fireworks(4);
   }
 
   launch() {
@@ -115,6 +115,7 @@ export class TitleScene {
   draw(g, e) {
     const t = this.t;
     if (this.back) g.drawImage(this.back, 0, 0, this.back.width, this.back.height, 0, 0, e.w, e.h);
+    sunBeams(g, e.w * 0.85, e.h * 0.12, e.max * 0.55, t);
     sun(g, e.w * 0.85, e.h * 0.12, e.min * 0.07, t);
     for (const c of this.clouds) {
       g.save();
@@ -127,6 +128,7 @@ export class TitleScene {
     hotAirBalloon(g, e.w * 0.14, e.h * 0.25, e.min * 0.1, t);
     boat(g, e.w * 0.86, this.horizon + (e.h - this.horizon) * 0.2, e.min * 0.07, t);
     const I = this.isl;
+    seaGlints(g, e, this.horizon, t);
     shoreWaves(g, I.cx, I.cy, I.rx, I.ry, t);
 
     // title, with a soft glow and orbiting stars

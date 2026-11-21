@@ -12,7 +12,7 @@
 import { TAU, Spring, clamp, ease, shuffled, Schedule } from '../../core/util.js';
 import { C, CONFETTI } from '../../core/palette.js';
 import { circle, radial, darken, roundRect, star as starPath } from '../../core/gfx.js';
-import { SceneBase } from '../../core/ui.js';
+import { IslandBase } from '../base.js';
 import { LAND, SEA } from '../../core/creatures.js';
 import { glow, rays, twinkle } from '../art.js';
 import { speak } from '../speech.js';
@@ -29,7 +29,7 @@ const TUNING = [
 const FACES = ['#ffe3ef', '#fff2c8', '#dff7d8', '#d9f0ff', '#efe3ff', '#ffe6d6'];
 const POOL = [...LAND.filter((a) => a.id !== 'bee'), ...SEA.filter((a) => ['octopus', 'turtle', 'crab', 'starfish', 'jelly'].includes(a.id))];
 
-export class MemoryScene extends SceneBase {
+export class MemoryScene extends IslandBase {
   constructor(game) {
     super(game, { sky: SKY, music: 'think', id: 'memory', hue: '#8f7cff', goals: [2, 2, 2, 2] });
     this.sched = new Schedule();
@@ -166,6 +166,7 @@ export class MemoryScene extends SceneBase {
     for (const c of [a, b]) {
       this.p.sparkle(c.x, c.y, ['#fff', C.yellow, '#e6dcff'], 16, c.w * 0.7);
       this.p.ring(c.x, c.y, '#ffffff', c.w * 0.6, 0.5);
+      this.game.magic?.burst(c.x, c.y, { n: 20, power: 0.55 });
     }
     this.reward(mx, my, { stars: 1 });
     speak(`${a.a.name}! ${a.a.says || ''}`, { music: this.game.music });

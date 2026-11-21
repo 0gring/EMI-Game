@@ -13,7 +13,7 @@
 import { TAU, Spring, rand, clamp, ease, Schedule } from '../../core/util.js';
 import { C } from '../../core/palette.js';
 import { circle, radial, roundRect } from '../../core/gfx.js';
-import { SceneBase } from '../../core/ui.js';
+import { IslandBase } from '../base.js';
 import { PAINTS, glow, rays, card, twinkle } from '../art.js';
 import { speak } from '../speech.js';
 
@@ -152,7 +152,7 @@ const TUNING = [
 
 const RAINBOW = ['#ff4d5e', '#ff9a1f', '#ffd93d', '#5fcf5f', '#4fa8ff', '#a774ff'];
 
-export class ColoringScene extends SceneBase {
+export class ColoringScene extends IslandBase {
   constructor(game) {
     super(game, { sky: SKY, music: 'calm', id: 'coloring', hue: '#4fa8ff', goals: [1, 2, 2, 2] });
     this.sched = new Schedule();
@@ -282,6 +282,7 @@ export class ColoringScene extends SceneBase {
     this.audio.randomNote('harp', 'pentatonicHigh', { vol: 0.4 });
     const col = paint.c === 'rainbow' ? RAINBOW[Math.floor(rand(6))] : paint.c === 'gold' ? '#ffd23d' : paint.c;
     this.p.sparkle(p.x, p.y, ['#fff', col], 10, e.min * 0.1);
+    this.game.magic?.burst(p.x, p.y, { n: 14, power: 0.4, colors: [col.startsWith('#') && col.length === 7 ? col : '#ffd93d', '#ffffff'] });
     if (!this.done && this.regions.every((k) => k.color)) this.sched.in(0.5, () => this.complete(e));
   }
 

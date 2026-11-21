@@ -141,6 +141,7 @@ export class Engine {
       const p = this._point(e);
       this.pointers.set(p.id, p);
       this.scene?.onDown?.(p, this);
+      this.overlay?.onDown?.(p, this);
     };
     const move = (e) => {
       const p = this.pointers.get(e.pointerId);
@@ -160,6 +161,7 @@ export class Engine {
       p.dy = y - p.py;
       p.moved += Math.hypot(p.dx, p.dy);
       this.scene?.onMove?.(p, this);
+      this.overlay?.onMove?.(p, this);
     };
     const up = (e) => {
       const p = this.pointers.get(e.pointerId);
@@ -256,7 +258,12 @@ export class Engine {
       }
     }
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 28);
-    if (!this.paused) this.scene?.update?.(dt, this);
+    if (!this.paused) {
+      this.scene?.update?.(dt, this);
+      // Optional layer above every scene (finger trails, fireworks). A game
+      // that sets none behaves exactly as before.
+      this.overlay?.update?.(dt, this);
+    }
   }
 
   draw() {
@@ -279,7 +286,13 @@ export class Engine {
       g.translate(-this.cx, -this.cy);
     }
     this.scene?.draw?.(g, this);
-    if (this.fade > 0) {
+    this.overlay?.draw?.(g, this);
+    if (this.fade > 0 && this.fadeDraw) {
+      // A game may draw its own transition. At fade = 1 it must cover every
+      // pixel, exactly like the plain wash below.
+      g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      this.fadeDraw(g, this, this.fade);
+    } else if (this.fade > 0) {
       g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
       g.globalAlpha = this.fade;
       g.fillStyle = this.fadeColor;

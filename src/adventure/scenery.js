@@ -285,3 +285,119 @@ export function drawMotes(g, e, motes, t, color = '#fffbe6') {
   }
   g.globalAlpha = 1;
 }
+
+// --- living details ---------------------------------------------------------------
+
+// Sunlight on the water: little four-point glints that wink on and off at
+// fixed spots, each on its own beat, so the sea always shimmers.
+export function seaGlints(g, e, y0, t, n = 26) {
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  g.fillStyle = '#ffffff';
+  for (let i = 0; i < n; i++) {
+    const x = ((i * 0.618 + 0.13) % 1) * e.w;
+    const y = y0 + ((i * 0.377 + 0.07) % 1) * (e.h - y0);
+    const k = Math.sin(t * (1.3 + (i % 5) * 0.31) + i * 2.1);
+    if (k < 0.55) continue;
+    const s = e.min * 0.018 * (k - 0.55) / 0.45;
+    g.globalAlpha = (k - 0.55) / 0.45;
+    g.beginPath();
+    g.moveTo(x, y - s);
+    g.quadraticCurveTo(x + s * 0.1, y - s * 0.1, x + s * 1.6, y);
+    g.quadraticCurveTo(x + s * 0.1, y + s * 0.1, x, y + s);
+    g.quadraticCurveTo(x - s * 0.1, y + s * 0.1, x - s * 1.6, y);
+    g.quadraticCurveTo(x - s * 0.1, y - s * 0.1, x, y - s);
+    g.fill();
+  }
+  g.restore();
+}
+
+// Soft beams of light fanning slowly out of the sun.
+export function sunBeams(g, x, y, len, t, n = 9) {
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  g.translate(x, y);
+  g.rotate(t * 0.05);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const w = 0.08 + 0.04 * Math.sin(t * 0.8 + i);
+    const grad = g.createLinearGradient(0, 0, Math.cos(a) * len, Math.sin(a) * len);
+    grad.addColorStop(0, 'rgba(255,245,200,0.14)');
+    grad.addColorStop(1, 'rgba(255,245,200,0)');
+    g.fillStyle = grad;
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.arc(0, 0, len, a - w, a + w);
+    g.closePath();
+    g.fill();
+  }
+  g.restore();
+}
+
+// A happy dolphin, unit length about 2, nose toward +x.
+export function dolphin(g, x, y, s, rot) {
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot);
+  g.scale(s, s);
+  g.fillStyle = radial(g, -0.2, -0.3, 1.4, ['#bfe7ff', '#6fb8ec', '#3f86c6']);
+  g.beginPath();
+  g.moveTo(1.0, 0.05);
+  g.quadraticCurveTo(0.9, -0.42, 0.1, -0.4);
+  g.quadraticCurveTo(-0.6, -0.36, -0.95, 0.02);
+  g.lineTo(-1.25, -0.28);
+  g.lineTo(-1.18, 0.05);
+  g.lineTo(-1.3, 0.3);
+  g.lineTo(-0.95, 0.12);
+  g.quadraticCurveTo(-0.3, 0.32, 0.5, 0.2);
+  g.quadraticCurveTo(0.85, 0.18, 1.0, 0.05);
+  g.fill();
+  // fin
+  g.beginPath();
+  g.moveTo(-0.1, -0.38);
+  g.quadraticCurveTo(-0.15, -0.72, -0.42, -0.72);
+  g.quadraticCurveTo(-0.3, -0.5, -0.35, -0.34);
+  g.fill();
+  // belly
+  g.fillStyle = 'rgba(255,255,255,0.75)';
+  g.beginPath();
+  g.ellipse(0.25, 0.12, 0.5, 0.1, 0.05, 0, TAU);
+  g.fill();
+  // eye and smile
+  g.fillStyle = '#2b2440';
+  circle(g, 0.62, -0.12, 0.06);
+  g.fill();
+  g.strokeStyle = '#2b2440';
+  g.lineWidth = 0.035;
+  g.beginPath();
+  g.arc(0.78, -0.02, 0.12, 0.3, 1.4);
+  g.stroke();
+  g.restore();
+}
+
+export function butterfly(g, x, y, s, t, color, ph = 0) {
+  const flap = Math.abs(Math.sin(t * 13 + ph));
+  g.save();
+  g.translate(x, y);
+  g.scale(s, s);
+  for (const sd of [-1, 1]) {
+    g.save();
+    g.scale(sd * (0.25 + flap * 0.75), 1);
+    g.fillStyle = color;
+    g.beginPath();
+    g.ellipse(0.42, -0.28, 0.45, 0.36, -0.5, 0, TAU);
+    g.fill();
+    g.beginPath();
+    g.ellipse(0.3, 0.3, 0.3, 0.26, 0.5, 0, TAU);
+    g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.6)';
+    circle(g, 0.48, -0.3, 0.11);
+    g.fill();
+    g.restore();
+  }
+  g.fillStyle = '#4a3b52';
+  g.beginPath();
+  g.ellipse(0, 0, 0.08, 0.36, 0, 0, TAU);
+  g.fill();
+  g.restore();
+}

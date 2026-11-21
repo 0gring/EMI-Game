@@ -12,7 +12,7 @@
 import { TAU, Spring, rand, randInt, pick, clamp, ease, lerp, shuffled, Schedule } from '../../core/util.js';
 import { C } from '../../core/palette.js';
 import { circle, label, roundRect, groundShadow, verticalGradient, hill, cloud, sun } from '../../core/gfx.js';
-import { SceneBase } from '../../core/ui.js';
+import { IslandBase } from '../base.js';
 import { byId } from '../../core/creatures.js';
 import { FOODS, glow, card } from '../art.js';
 import { speak, NUMBERS } from '../speech.js';
@@ -39,7 +39,7 @@ const TUNING = [
   { min: 4, max: 10 },
 ];
 
-export class FeedScene extends SceneBase {
+export class FeedScene extends IslandBase {
   constructor(game) {
     super(game, { sky: SKY, music: 'play', id: 'feed', hue: '#3fbf5f', goals: [3, 3, 4, 4] });
     this.sched = new Schedule();
@@ -203,6 +203,7 @@ export class FeedScene extends SceneBase {
     pl.fill.set(0.3);
     pl.fill.to(1);
     this.p.sparkle(pl.x, pl.y, ['#fff', C.yellow], 8, this.plateR * 1.5);
+    this.game.magic?.burst(pl.x, pl.y, { n: 14, power: 0.35 });
     this.bigNum = { n, t: 0 };
     speak(NUMBERS[n], { music: this.game.music, rate: 0.9 });
     if (n >= this.want) {
