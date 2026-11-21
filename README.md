@@ -12,7 +12,7 @@ are there for the grown-up and for hearing a name spoken alongside a picture.
 ## The second game: האי הקסום של אמי — Emi's Magic Island
 
 A new game for a three-year-old, on the same engine: an island in the sea with
-six magical places, each a step up from the toddler activities below. It asks
+seven magical places, each a step up from the toddler activities below. It asks
 her to *think* a little — match, count, choose, build — but keeps the same
 rule that nothing can be failed.
 
@@ -39,6 +39,7 @@ stars are kept. It is also playable in a browser at `adventure.html` (or
 | 🃏 | **זיכרון** Memory | Find the pairs. Every board starts with a peek at all the cards | memory, and an animal word for every card turned |
 | 🐰 | **חיות רעבות** Hungry animals | An animal wants N things; she feeds it and every bite is counted aloud — "אחת, שתיים, שלוש" | counting, one-to-one correspondence, Hebrew numbers |
 | 🖍️ | **צביעה** Colouring | Pick a crayon, touch a region, the colour spreads from her finger and never leaves the lines | colour names, finishing a picture |
+| 🎈 | **בלונים** Colour balloons | A colour is called and balloons with faces float up. The right colour pops and an animal parachutes out, or it zooms round the screen blowing a raspberry; another colour giggles, sticks its tongue out and says its own colour. Giant balloons swell with each tap until they burst | colour names, and laughing |
 | 🌻 | **גינה** Garden | Plant seeds, water them, watch them grow; the rain cloud waters everything; every flower brings a butterfly or a bee | patience, growth, colours |
 
 Each place has four levels, shown as four stars on its medallion: bigger cakes

@@ -31,7 +31,7 @@ const SIZES = [
   { name: 'tablet', width: 1280, height: 800 },
   { name: 'phone', width: 412, height: 860 },
 ];
-const SCENES = ['cake', 'puzzle', 'memory', 'feed', 'coloring', 'garden'];
+const SCENES = ['cake', 'puzzle', 'memory', 'feed', 'coloring', 'garden', 'colorpop'];
 
 // Runs inside the page: completes one round of the current scene by calling
 // the same methods a finger would reach.
@@ -85,6 +85,17 @@ const PLAY = async (id) => {
     for (const r of sc.regions) {
       sc.fill(r, 50, 50, { x: e.cx, y: e.cy }, e);
       sc.sel = (sc.sel + 1) % sc.paints.length;
+    }
+  } else if (id === 'colorpop') {
+    // touch a balloon of another colour first: it must giggle, not count
+    while (!sc.balloons.some((b) => b.state === 'rise' && b.col !== sc.target)) await wait(50);
+    const other = sc.balloons.find((b) => b.state === 'rise' && b.col !== sc.target);
+    tap(other.x, other.y);
+    if (other.state !== 'tickle' || sc.popped !== 0) throw new Error('wrong colour was not a tickle');
+    while (!sc.roundDone) {
+      const b = sc.balloons.find((k) => k.state === 'rise' && k.col === sc.target);
+      if (b) tap(b.x, b.y);
+      await wait(60);
     }
   } else if (id === 'garden') {
     for (let k = 0; k < 4; k++) {

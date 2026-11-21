@@ -18,6 +18,7 @@ import { MemoryScene } from './scenes/memory.js';
 import { FeedScene } from './scenes/feed.js';
 import { ColoringScene } from './scenes/coloring.js';
 import { GardenScene } from './scenes/garden.js';
+import { ColorPopScene } from './scenes/colorpop.js';
 import { Magic } from './magic.js';
 
 export const SCENES = {
@@ -27,6 +28,7 @@ export const SCENES = {
   feed: FeedScene,
   coloring: ColoringScene,
   garden: GardenScene,
+  colorpop: ColorPopScene,
 };
 
 class Game {

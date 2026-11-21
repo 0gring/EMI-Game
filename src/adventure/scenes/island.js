@@ -23,6 +23,7 @@ export const PLACES = [
   { id: 'feed', label: 'חיות רעבות', say: 'החיות רעבות', hue: '#5fcf6f' },
   { id: 'coloring', label: 'צביעה', say: 'צובעים', hue: '#4fb0ff' },
   { id: 'garden', label: 'גינה', say: 'הגינה הקסומה', hue: '#ffcf3d' },
+  { id: 'colorpop', label: 'בלונים', say: 'בלונים צבעוניים', hue: '#ff5d6e' },
 ];
 
 // --- medallion icons, unit radius 1 ------------------------------------------
@@ -150,7 +151,45 @@ function iconGarden(g, t) {
   g.fill();
 }
 
-const ICONS = { cake: iconCake, puzzle: iconPuzzle, memory: iconMemory, feed: iconFeed, coloring: iconColoring, garden: iconGarden };
+function iconBalloons(g, t) {
+  const b = (x, y, r, col, ph) => {
+    g.save();
+    g.translate(x, y + Math.sin(t * 2 + ph) * 0.04);
+    g.rotate(Math.sin(t * 1.5 + ph) * 0.12);
+    g.strokeStyle = 'rgba(120,100,140,0.6)';
+    g.lineWidth = 0.035;
+    g.beginPath();
+    g.moveTo(0, r * 1.05);
+    g.quadraticCurveTo(r * 0.3, r * 1.6, 0, r * 2.2);
+    g.stroke();
+    g.fillStyle = radial(g, -r * 0.35, -r * 0.45, r * 2, [lighten(col, 0.5), col, darken(col, 0.22)]);
+    g.beginPath();
+    g.ellipse(0, 0, r * 0.86, r, 0, 0, TAU);
+    g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.55)';
+    g.beginPath();
+    g.ellipse(-r * 0.32, -r * 0.4, r * 0.16, r * 0.26, 0.5, 0, TAU);
+    g.fill();
+    // a tiny smile, these are the funny balloons
+    g.strokeStyle = '#3b2f4a';
+    g.lineWidth = r * 0.08;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.arc(0, r * 0.05, r * 0.28, 0.4, Math.PI - 0.4);
+    g.stroke();
+    g.fillStyle = '#3b2f4a';
+    circle(g, -r * 0.22, -r * 0.18, r * 0.08);
+    g.fill();
+    circle(g, r * 0.22, -r * 0.18, r * 0.08);
+    g.fill();
+    g.restore();
+  };
+  b(-0.42, -0.05, 0.36, '#4fa8ff', 1);
+  b(0.42, -0.1, 0.36, '#ffd23d', 2);
+  b(0, -0.3, 0.42, '#ff4d5e', 0);
+}
+
+const ICONS = { colorpop: iconBalloons, cake: iconCake, puzzle: iconPuzzle, memory: iconMemory, feed: iconFeed, coloring: iconColoring, garden: iconGarden };
 
 export class IslandScene extends IslandBase {
   constructor(game) {
@@ -211,17 +250,34 @@ export class IslandScene extends IslandBase {
       ry: P ? e.h * 0.37 : e.h * 0.36,
     };
     const I = this.isl;
-    this.nodeR = clamp(Math.min(e.min * (P ? 0.15 : 0.125), (P ? e.w : e.h) * 0.15), 34, 120);
-    // Ring of places, starting at the top and going round. Pulled in from the
-    // island edge by the node radius so labels never fall into the sea.
-    const rx = I.rx - this.nodeR * 1.35;
-    const ry = I.ry - this.nodeR * 1.05;
-    this.nodes.forEach((n, i) => {
-      const a = -Math.PI / 2 + (i / this.nodes.length) * TAU + Math.PI / 6;
-      n.x = I.cx + Math.cos(a) * rx;
-      n.y = Math.max(top + this.nodeR * 1.2, I.cy + Math.sin(a) * ry - this.nodeR * 0.15);
-      n.r = this.nodeR;
-    });
+    // Ring of places round the island, pulled in from the edge by the node
+    // radius so labels never fall into the sea. The ring is laid out, then the
+    // medallions shrink until neighbours (labels included) clear each other -
+    // so seven places fit as well as six, on a tall phone as on a wide tablet.
+    const n = this.nodes.length;
+    const place = (r) => {
+      const rx = I.rx - r * 1.35;
+      const ry = I.ry - r * 1.05;
+      this.nodes.forEach((nd, i) => {
+        // start just right of the top, so the castle keeps the top centre
+        const a = -Math.PI / 2 + ((i + 0.5) / n) * TAU;
+        nd.x = I.cx + Math.cos(a) * rx;
+        nd.y = Math.max(top + r * 1.2, I.cy + Math.sin(a) * ry - r * 0.15);
+        nd.r = r;
+      });
+    };
+    let r = clamp(Math.min(e.min * (P ? 0.15 : 0.125), (P ? e.w : e.h) * 0.15), 30, 120);
+    for (let k = 0; k < 30; k++) {
+      place(r);
+      let gap = Infinity;
+      for (let i = 0; i < n; i++) {
+        const p = this.nodes[i], q = this.nodes[(i + 1) % n];
+        gap = Math.min(gap, Math.hypot(p.x - q.x, (p.y - q.y) * 0.85));
+      }
+      if (gap >= r * 2.55 || r <= 30) break;
+      r *= 0.95;
+    }
+    this.nodeR = r;
     this.emiS = this.nodeR * 0.62;
     this.emi.x = this.emi.fx = this.emi.tx = I.cx;
     this.emi.y = this.emi.fy = this.emi.ty = I.cy + this.emiS * 0.6;

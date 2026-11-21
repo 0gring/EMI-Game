@@ -51,6 +51,9 @@ const SHELL_FILES = [
   './src/adventure/scenes/feed.js',
   './src/adventure/scenes/coloring.js',
   './src/adventure/scenes/garden.js',
+  './src/adventure/scenes/colorpop.js',
+  './src/adventure/magic.js',
+  './src/adventure/base.js',
 ];
 
 self.addEventListener('install', (e) => {
