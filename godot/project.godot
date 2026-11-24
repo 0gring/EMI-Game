@@ -1,0 +1,46 @@
+; Emi's Magic Island - Godot rebuild.
+
+config_version=5
+
+[application]
+
+config/name="האי הקסום של אמי"
+run/main_scene="res://scenes/hub.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(1, 0.84, 0.92, 1)
+boot_splash/show_image=false
+config/icon="res://icon.png"
+
+[audio]
+
+general/text_to_speech=true
+
+[autoload]
+
+Game="*res://scripts/game.gd"
+Autotest="*res://scripts/autotest.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+window/energy_saving/keep_screen_on=true
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_2d=2
+environment/defaults/default_clear_color=Color(1, 0.84, 0.92, 1)
+
+[debug]
+
+gdscript/warnings/inference_on_variant=1

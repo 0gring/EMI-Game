@@ -1,0 +1,4 @@
+# Godot's import cache and anything an export drops here
+.godot/
+*.apk
+*.aab

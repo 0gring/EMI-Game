@@ -1,27 +1,23 @@
-# Builds "האי הקסום של אמי" as an installable Android app (APK) and publishes
-# it as the release "android-latest", so the newest build is always at:
+# Builds "האי הקסום של אמי" - the Godot game in godot/ - as an installable
+# Android app (APK) and publishes it as the release "android-latest":
 #
 #   https://github.com/0gring/EMI-Game/releases/download/android-latest/emi-magic-island.apk
 #
-# Open that link on the tablet, allow installing from the browser once, and
-# tap Install. Every build is signed with the same key (android/app/
-# emi-island.keystore) and carries a higher version number, so a newer APK
-# installs straight over the old one and keeps her stars.
+# Before exporting, the same play-test that runs locally drives the real game
+# with simulated fingers; a failing check stops the build, so a broken game is
+# never published.
+#
+# The app keeps the package name and signing key of the earlier build
+# (android/app/emi-island.keystore), and its version code is the run number
+# plus 100, so a new APK always installs straight over whatever is on the tablet.
 
 name: Android app
 
 on:
   push:
     paths:
-      - 'src/**'
-      - 'assets/**'
-      - 'android/**'
-      - 'adventure.html'
-      - 'capacitor.config.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tools/bundle.mjs'
-      - 'tools/build-app.mjs'
+      - 'godot/**'
+      - 'android/app/emi-island.keystore'
       - '.github/workflows/android.yml'
   workflow_dispatch:
 
@@ -32,41 +28,69 @@ concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  GODOT_VERSION: 4.7.1
+
 jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
-      # No SDK setup step: the hosted runner already has the Android SDK with its
-      # licences accepted (ANDROID_HOME), and Gradle fetches any missing platform.
-
-      # The app is the standalone single-file game wrapped for a WebView;
-      # build-app also runs `cap sync`, which copies it into the Android
-      # project and wires up the speech and back-button plugins.
-      - name: Build the game for the app
+      - name: Install Godot
         run: |
-          npm ci
-          node tools/build-app.mjs
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          godot --version
 
-      - name: Build the APK
-        working-directory: android
+      - name: Cache export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          key: godot-templates-${{ env.GODOT_VERSION }}
+
+      - name: Install export templates
+        if: steps.templates.outputs.cache-hit != 'true'
         run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
 
-      - name: Collect the APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk emi-magic-island.apk
+      # Godot finds the Android SDK and JDK through its editor settings.
+      - name: Point Godot at the Android SDK
+        run: |
+          mkdir -p ~/.config/godot
+          for f in editor_settings-4.tres "editor_settings-${GODOT_VERSION%.*}.tres"; do
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' \
+              "$ANDROID_HOME" "$JAVA_HOME" > ~/.config/godot/$f
+          done
+
+      - name: Import the project
+        run: godot --headless --path godot --import || true
+
+      - name: Play-test the game
+        run: |
+          godot --headless --path godot -- --autotest 2>&1 | tee autotest.log
+          grep -q "^PASS" autotest.log
+
+      - name: Export the APK
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/android/app/emi-island.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: emi
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: emi-island
+        run: |
+          sed -i "s/^version\/code=.*/version\/code=$((GITHUB_RUN_NUMBER + 100))/" godot/export_presets.cfg
+          sed -i "s/^version\/name=.*/version\/name=\"2.0.${GITHUB_RUN_NUMBER}\"/" godot/export_presets.cfg
+          godot --headless --path godot --export-release "Android" "$PWD/emi-magic-island.apk"
+          ls -la emi-magic-island.apk
 
       - uses: actions/upload-artifact@v4
         with:
