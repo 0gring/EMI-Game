@@ -34,8 +34,11 @@ func luli_spot() -> Vector2:
 
 func build() -> void:
 	_title()
+	# a place appears only once its activity exists, so the meadow never
+	# offers a door that leads nowhere
 	for p in PLACES:
-		portals.append(_portal(p))
+		if ResourceLoader.exists("res://scenes/%s.tscn" % p["id"]):
+			portals.append(_portal(p))
 
 func _ready() -> void:
 	super._ready()

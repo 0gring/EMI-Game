@@ -80,6 +80,7 @@ jobs:
         run: |
           godot --headless --path godot -- --autotest 2>&1 | tee autotest.log
           grep -q "^PASS" autotest.log
+          ! grep -q "SCRIPT ERROR" autotest.log
 
       - name: Export the APK
         env:

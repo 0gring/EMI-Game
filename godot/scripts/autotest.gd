@@ -55,6 +55,10 @@ func _ready() -> void:
 		await test_feed()
 	# each activity's own play-test: scripts/tests/<activity>.gd, func run(t)
 	var dir := DirAccess.open("res://scripts/tests")
+	if dir == null:
+		print("%s - %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
+		get_tree().quit(1 if failures else 0)
+		return
 	var only := ""
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--only="):
@@ -62,7 +66,10 @@ func _ready() -> void:
 	for f in dir.get_files():
 		if f.ends_with(".gd") and (only == "" or f.begins_with(only)):
 			var tst = load("res://scripts/tests/" + f).new()
-			await tst.run(self)
+			# a script error inside a test ends it early and returns nothing;
+			# only a test that reaches its last line returns true
+			var finished = await tst.run(self)
+			check(finished == true, "%s ran to the end" % f.get_basename())
 	print("%s - %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	get_tree().quit(1 if failures else 0)
 
@@ -101,7 +108,11 @@ func test_hub() -> void:
 	var hub := scene()
 	await wait(1.0)
 	await shot("1-hub")
-	check(hub.portals.size() == 7, "seven places to go")
+	var scenes := 0
+	for p in hub.PLACES:
+		if ResourceLoader.exists("res://scenes/%s.tscn" % p["id"]):
+			scenes += 1
+	check(hub.portals.size() == scenes and scenes >= 2, "a place for every activity (%d)" % scenes)
 	await touch(hub.portals[0]["pos"])
 	await wait(2.6)
 	check(scene().name == "colorpop", "touching the balloons opens the balloon game (got %s)" % scene().name)

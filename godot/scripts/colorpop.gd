@@ -161,9 +161,16 @@ class Balloon extends Node2D:
 
 	func _process(dt: float) -> void:
 		t += dt
-		var a := (0.0 - squash) * 260.0 - squash_v * 9.0
-		squash_v += a * dt
-		squash += squash_v * dt
+		# sub-stepped and clamped: a long frame on a slow tablet must not
+		# blow the spring up into a giant balloon
+		var left := dt
+		while left > 0.0:
+			var h := minf(left, 1.0 / 120.0)
+			var a := (0.0 - squash) * 260.0 - squash_v * 9.0
+			squash_v += a * h
+			squash += squash_v * h
+			left -= h
+		squash = clampf(squash, -0.6, 0.6)
 		var s := squash + sin(t * 2.2 + ph) * 0.02
 		scale = Vector2(1.0 + s * 0.5, 1.0 - s * 0.5) * grow
 		blink_t -= dt
