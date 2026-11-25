@@ -254,7 +254,8 @@ func speak(text: String) -> float:
 		_find_voice()
 	if he_voice != "":
 		DisplayServer.tts_stop()
-		DisplayServer.tts_speak(text, he_voice, 100, 1.15, 0.95)
+		# vowels added, so the engine says the word we mean (see hebrew.gd)
+		DisplayServer.tts_speak(Hebrew.vocalize(text), he_voice, 100, 1.15, 0.95)
 		duck(secs + 0.3)
 	return secs
 

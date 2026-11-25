@@ -44,11 +44,37 @@ func _ready() -> void:
 		return
 	Game.muted = false
 	await wait(0.5)
+	test_vowels()
 	await test_hub()
 	await test_colorpop()
 	await test_feed()
 	print("%s - %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	get_tree().quit(1 if failures else 0)
+
+## Every Hebrew word in a string anywhere in the game's code must have its
+## vowels in hebrew.gd, or the speech engine will guess them.
+func test_vowels() -> void:
+	print("spoken Hebrew")
+	var missing := []
+	var re := RegEx.new()
+	re.compile("\"[^\"]*[\\x{05D0}-\\x{05EA}][^\"]*\"")
+	var word := RegEx.new()
+	word.compile("[\\x{05D0}-\\x{05EA}]+")
+	var dir := DirAccess.open("res://scripts")
+	for f in dir.get_files():
+		if not f.ends_with(".gd") or f == "hebrew.gd" or f == "autotest.gd":
+			continue
+		var src := FileAccess.get_file_as_string("res://scripts/" + f)
+		for line in src.split("\n"):
+			if line.strip_edges().begins_with("#"):
+				continue
+			for m in re.search_all(line):
+				for w in word.search_all(m.get_string()):
+					var s := w.get_string()
+					if not Hebrew.WORDS.has(s) and not missing.has(s):
+						missing.append(s)
+	check(missing.is_empty(), "every spoken word has its vowels %s" % ("" if missing.is_empty() else str(missing)))
+	check(Hebrew.vocalize("בואי נשחק!") == "בּוֹאִי נְשַׂחֵק!", "\"בואי נשחק\" is sent as ne-sa-HEK")
 
 func test_hub() -> void:
 	print("hub")
