@@ -33,11 +33,29 @@ const WORDS := {
 	"שועל": "שׁוּעָל", "פנדה": "פַּנְדָּה", "עכבר": "עַכְבָּר", "צפרדע": "צְפַרְדֵּעַ",
 	# feeding
 	"רעב": "רָעֵב", "בבקשה": "בְּבַקָּשָׁה", "מלא": "מָלֵא", "סליחה": "סְלִיחָה", "תודה": "תּוֹדָה",
+	# the hub's places
+	"נאפה": "נֹאפֶה", "עוגה": "עוּגָה", "נרכיב": "נַרְכִּיב", "פאזל": "פָּאזֶל",
+	"זיכרון": "זִכָּרוֹן", "בזיכרון": "בְּזִכָּרוֹן", "נצבע": "נִצְבַּע", "צביעה": "צְבִיעָה",
+	"נשתול": "נִשְׁתֹּל", "פרחים": "פְּרָחִים", "גינה": "גִּנָּה",
 	# the hub's sign-posts
 	"האי": "הָאִי", "הקסום": "הַקָּסוּם", "של": "שֶׁל",
 }
 
 static var missing: Array[String] = []
+static var _all: Dictionary = {}
+
+## The shared table above plus every activity's own table in scripts/words/,
+## each a script with `const WORDS := {...}`.
+static func table() -> Dictionary:
+	if _all.is_empty():
+		_all = WORDS.duplicate()
+		var dir := DirAccess.open("res://scripts/words")
+		if dir:
+			for f in dir.get_files():
+				if f.ends_with(".gd"):
+					var sc = load("res://scripts/words/" + f)
+					_all.merge(sc.WORDS)
+	return _all
 
 ## The same sentence with every known word vocalised; punctuation kept.
 static func vocalize(text: String) -> String:
@@ -55,8 +73,9 @@ static func vocalize(text: String) -> String:
 	return out.substr(0, out.length() - 1)
 
 static func _word(w: String) -> String:
-	if WORDS.has(w):
-		return WORDS[w]
+	var t := table()
+	if t.has(w):
+		return t[w]
 	if not missing.has(w):
 		missing.append(w)
 	return w

@@ -43,11 +43,26 @@ func _ready() -> void:
 	if not "--autotest" in OS.get_cmdline_user_args():
 		return
 	Game.muted = false
+	# every run starts from a fresh save, so levels left by an earlier run
+	# cannot change what the checks see
+	Game.stars = 0
+	Game.levels = {}
 	await wait(0.5)
 	test_vowels()
-	await test_hub()
-	await test_colorpop()
-	await test_feed()
+	if not "--skip-core" in OS.get_cmdline_user_args():
+		await test_hub()
+		await test_colorpop()
+		await test_feed()
+	# each activity's own play-test: scripts/tests/<activity>.gd, func run(t)
+	var dir := DirAccess.open("res://scripts/tests")
+	var only := ""
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--only="):
+			only = a.substr(7)
+	for f in dir.get_files():
+		if f.ends_with(".gd") and (only == "" or f.begins_with(only)):
+			var tst = load("res://scripts/tests/" + f).new()
+			await tst.run(self)
 	print("%s - %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	get_tree().quit(1 if failures else 0)
 
@@ -60,18 +75,21 @@ func test_vowels() -> void:
 	re.compile("\"[^\"]*[\\x{05D0}-\\x{05EA}][^\"]*\"")
 	var word := RegEx.new()
 	word.compile("[\\x{05D0}-\\x{05EA}]+")
+	var files := []
 	var dir := DirAccess.open("res://scripts")
 	for f in dir.get_files():
 		if not f.ends_with(".gd") or f == "hebrew.gd" or f == "autotest.gd":
 			continue
-		var src := FileAccess.get_file_as_string("res://scripts/" + f)
+		files.append("res://scripts/" + f)
+	for path in files:
+		var src := FileAccess.get_file_as_string(path)
 		for line in src.split("\n"):
 			if line.strip_edges().begins_with("#"):
 				continue
 			for m in re.search_all(line):
 				for w in word.search_all(m.get_string()):
 					var s := w.get_string()
-					if not Hebrew.WORDS.has(s) and not missing.has(s):
+					if not Hebrew.table().has(s) and not missing.has(s):
 						missing.append(s)
 	check(missing.is_empty(), "every spoken word has its vowels %s" % ("" if missing.is_empty() else str(missing)))
 	check(Hebrew.vocalize("בואי נשחק!") == "בּוֹאִי נְשַׂחֵק!", "\"בואי נשחק\" is sent as ne-sa-HEK")
@@ -83,7 +101,7 @@ func test_hub() -> void:
 	var hub := scene()
 	await wait(1.0)
 	await shot("1-hub")
-	check(hub.portals.size() == 2, "two places to go")
+	check(hub.portals.size() == 7, "seven places to go")
 	await touch(hub.portals[0]["pos"])
 	await wait(2.6)
 	check(scene().name == "colorpop", "touching the balloons opens the balloon game (got %s)" % scene().name)
@@ -100,12 +118,14 @@ func test_colorpop() -> void:
 	for k in 250:
 		for b in s.balloons:
 			if b.state == "rise" and b.col != s.target and b.position.y < s.size.y * 0.8 and b.position.y > s.size.y * 0.25 and not b.rainbow:
-				# only one with no other balloon near it, so the tap is unambiguous
-				var alone := true
-				for o in s.balloons:
-					if o != b and o.state == "rise" and o.position.distance_to(b.position) < b.r * 1.7:
-						alone = false
-				if alone:
+				# only one the game itself would pick for a tap on its centre
+				var first = null
+				for i in range(s.balloons.size() - 1, -1, -1):
+					var o = s.balloons[i]
+					if o.state == "rise" and b.position.distance_to(o.position) < o.r * o.grow * 1.25:
+						first = o
+						break
+				if first == b:
 					other = b
 		if other:
 			break

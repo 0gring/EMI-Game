@@ -395,4 +395,11 @@ write('present', svg(
     + fs('M90,170 L422,170 L422,240 L90,240 Z', '#ff8ac4', '#c83a7a')
     + '<rect x="234" y="170" width="44" height="280" fill="#ffd84a"/>'
     + fs('M256,170 C200,90 140,110 170,160 C190,180 230,176 256,170 C282,176 322,180 342,160 C372,110 312,90 256,170 Z', '#ffd84a', '#d8a010', 8)))
+
+# Each activity keeps its own art in tools/art_<activity>.py, run here with
+# every helper above (svg, radial, linear, shaded, fs, shine, blob, write...)
+# already in scope.
+for extra in sorted(Path(__file__).resolve().parent.glob('art_*.py')):
+    exec(compile(extra.read_text(), str(extra), 'exec'), globals())
+
 print(f'wrote {len(list(OUT.glob("*.svg")))} parts to {OUT}')
