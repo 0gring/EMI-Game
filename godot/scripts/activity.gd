@@ -47,7 +47,8 @@ func _ready() -> void:
 	add_child(world)
 	world.setup(mood(), clear_rects(), 0.8)
 	build()
-	luli = Creature.new()
+	# Luli is painted (generated art cut into pieces), not drawn - see puppet.gd
+	luli = Puppet.new()
 	luli.species = "unicorn"
 	luli.height = size.y * 0.3
 	luli.position = luli_spot()

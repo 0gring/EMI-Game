@@ -340,8 +340,9 @@ func _pose(dt: float) -> void:
 		parts["tail"].rotation = sin(t * (9.0 if emotion == "happy" else 3.0)) * (0.3 if emotion == "happy" else 0.1)
 	# arms swing, wave when happy
 	var wave := 1.0 if emotion == "happy" else 0.0
-	parts["arm_l"].rotation = 0.35 + sin(t * 2.0 + seed_) * 0.05 - wave * (1.6 + sin(t * 12.0) * 0.4)
-	parts["arm_r"].rotation = -0.35 - sin(t * 2.0 + seed_) * 0.05 + wave * (1.6 + sin(t * 12.0 + 1.0) * 0.4)
+	var rest: float = parts["arm_l"].get_meta("rest", 0.35)
+	parts["arm_l"].rotation = rest + sin(t * 2.0 + seed_) * 0.05 - wave * (1.6 + sin(t * 12.0) * 0.4)
+	parts["arm_r"].rotation = -rest - sin(t * 2.0 + seed_) * 0.05 + wave * (1.6 + sin(t * 12.0 + 1.0) * 0.4)
 	parts["shadow"].scale.x = 2.2 * u * (1.0 + hop / (height * 0.8))
 	parts["shadow"].modulate.a = 0.28 * (1.0 + hop / height)
 
@@ -352,13 +353,16 @@ func _face(_dt: float) -> void:
 		var hpy: Sprite2D = parts["happy_" + side]
 		e.visible = not happy
 		hpy.visible = happy
-		var sx := 0.5 * u
-		var sy := 0.5 * u * (1.0 - blink * 0.9)
+		# a rig built from painted pieces stores each eye's own size
+		var sx: float = e.get_meta("s", 0.5 * u)
+		var sy := sx * (1.0 - blink * 0.9)
 		if emotion == "surprised":
 			sx *= 1.2
 			sy *= 1.2
-		e.scale = Vector2(sx, sy)
-		e.offset = look * 40.0
+		# a mirrored eye (painted lashes on the outside) keeps its mirroring
+		var flip: float = e.get_meta("flip", 1.0)
+		e.scale = Vector2(sx * flip, sy)
+		e.offset = look * e.texture.get_width() * 0.08 * Vector2(flip, 1.0)
 	var m := "smile"
 	if talk_t > 0.0:
 		mouth_flip += get_process_delta_time()
