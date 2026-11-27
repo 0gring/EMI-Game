@@ -41,4 +41,33 @@ const KITS := {
 		"cheeks": {"x": 250, "y": 70},
 		"arm_rest": 0.12,
 	},
+	"pig": {
+		"kit": "pig",
+		"head_h": 640,
+		"ears": {"x": 215, "y": -185, "h": 290, "anchor": Vector2(0.55, 0.9), "rot": 0.3},
+		"tail": {"pos": Vector2(150, -190), "h": 140, "anchor": Vector2(0.2, 0.5)},
+		"eyes": {"x": 145, "y": -40, "h": 150, "happy_h": 70, "happy_y": -50},
+		"mouth": {"y": 235, "h": 70},
+		"cheeks": {"x": 235, "y": 80},
+	},
+	"bear": {
+		"kit": "bear",
+		"head_h": 640,
+		"ears": {"x": 260, "y": -235, "h": 230, "anchor": Vector2(0.5, 0.75), "rot": 0.2},
+		"tail": {"pos": Vector2(150, -130), "h": 120, "anchor": Vector2(0.3, 0.5)},
+		"eyes": {"x": 145, "y": -40, "h": 150, "happy_h": 70, "happy_y": -50},
+		# the bear's mouths are whole muzzles, laid over the painted one
+		"mouth": {"y": 145, "h": 215},
+		"cheeks": {"x": 235, "y": 60},
+	},
+	"fox": {
+		"kit": "fox",
+		"eye_kit": "bear",
+		"head_h": 600,
+		"ears": {"x": 180, "y": -180, "h": 260, "anchor": Vector2(0.5, 0.95), "rot": 0.3},
+		"tail": {"pos": Vector2(150, -120), "h": 430, "anchor": Vector2(0.12, 0.85)},
+		"eyes": {"x": 135, "y": -25, "h": 140, "happy_h": 65, "happy_y": -35},
+		"mouth": {"y": 160, "h": 80},
+		"cheeks": {"x": 225, "y": 70},
+	},
 }

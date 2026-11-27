@@ -286,15 +286,17 @@ func _build_painted(cfg: Dictionary) -> void:
 		p.rotation = e[4]
 
 	var ey: Dictionary = cfg["eyes"]
+	# eyes can come from another painted animal while this one has no face sheet
+	var ek: String = cfg.get("eye_kit", kit)
 	for side in [-1, 1]:
 		var key := "l" if side < 0 else "r"
 		# the right eye is mirrored so painted lashes sit on the outside
-		var e := piece(kit, "eye", head, Vector2(side * float(ey["x"]), ey["y"]), ey["h"], Vector2(0.5, 0.5), side > 0)
+		var e := piece(ek, "eye", head, Vector2(side * float(ey["x"]), ey["y"]), ey["h"], Vector2(0.5, 0.5), side > 0)
 		e.set_meta("s", absf(e.scale.x))
 		e.set_meta("flip", -1.0 if side > 0 else 1.0)
 		parts["eye_" + key] = e
-		if _has(kit, "eye_happy"):
-			parts["happy_" + key] = piece(kit, "eye_happy", head, Vector2(side * float(ey["x"]), ey.get("happy_y", ey["y"])), ey["happy_h"], Vector2(0.5, 0.5), side > 0)
+		if _has(ek, "eye_happy"):
+			parts["happy_" + key] = piece(ek, "eye_happy", head, Vector2(side * float(ey["x"]), ey.get("happy_y", ey["y"])), ey["happy_h"], Vector2(0.5, 0.5), side > 0)
 		else:
 			parts["happy_" + key] = spr("eye_happy", head, Vector2(side * float(ey["x"]), ey["y"]), 0.4)
 		var ck: Dictionary = cfg["cheeks"]
