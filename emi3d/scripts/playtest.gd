@@ -13,6 +13,10 @@ func _ready() -> void:
 			shots = a.substr(8)
 	Game.stars = 0
 	Game.levels = {}
+	# never hang: a stuck test is a failed test
+	get_tree().create_timer(900.0).timeout.connect(func():
+		print("FAIL - the play-test timed out")
+		get_tree().quit(1))
 	run.call_deferred()
 
 func shot(name: String) -> void:
@@ -49,11 +53,16 @@ func run() -> void:
 	await shot("0-garden")
 	# walking: tap the lawn to the left
 	var before := garden.luli.global_position
-	var lawn := Vector3(3.0, 0, 6.0)
+	var lawn := Vector3(-3.0, 0, 4.0)
 	lawn.y = garden.ground_y(lawn.x, lawn.z)
 	garden.tap_screen(garden.screen_of(lawn))
 	await wait(1.5)
 	check(garden.luli.global_position.distance_to(before) > 0.5, "Luli walks where the lawn is tapped")
+	await edges()
+	if "--edges" in OS.get_cmdline_user_args():
+		get_tree().quit()
+		return
+	await buttons_and_help()
 	var only := ""
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--only="):
@@ -71,6 +80,64 @@ func run() -> void:
 		check(Game.stars >= 7, "stars collected: %d" % Game.stars)
 	print("PASS" if failures == 0 else "FAIL - %d failure(s)" % failures)
 	get_tree().quit()
+
+## Luli stays in the picture wherever she walks on the island.
+func edges() -> void:
+	for st in garden.station_list:
+		if st.active:
+			print("note: the lawn tap started ", st.id)
+			st.abort()
+	var vs := get_viewport().get_visible_rect().size
+	var worst := ""
+	for p in [Vector2(-13, 0), Vector2(13, 0), Vector2(0, -11), Vector2(0, 11), Vector2(-11, 8), Vector2(11, -8), Vector2(10, 9)]:
+		var q: Vector3 = garden.keep_on(Vector3(p.x, 0, p.y))
+		garden.luli.global_position = Vector3(q.x, garden.ground_y(q.x, q.z), q.z)
+		await wait(2.5)
+		await shot("edge-%d-%d" % [int(p.x), int(p.y)])
+		var feet := garden.screen_of(garden.luli.global_position)
+		var head := garden.screen_of(garden.luli.global_position + Vector3(0, garden.luli.tall, 0))
+		var inside := feet.x > 40 and feet.x < vs.x - 40 and feet.y < vs.y - 10 and head.y > 10
+		if not inside:
+			worst += " %s->%s" % [p, feet]
+	check(worst == "", "Luli stays on screen at the island's edges" + worst)
+	garden.luli.global_position = Vector3(0, garden.ground_y(0, 2), 2)
+	await wait(1.5)
+
+## Every game's side button starts it, even in the middle of another game;
+## left alone, a game points the way after 10 seconds and helps along later.
+func buttons_and_help() -> void:
+	check(garden.game_buttons.size() == garden.station_list.size(), "a button for every game")
+	var ap := station("apples3d") as Node
+	var hd := station("hide3d") as Node
+	garden.go_play(ap)
+	await until(func(): return ap._playing, 15.0)
+	check(ap.active, "the apple button starts the apples")
+	garden.go_play(hd)
+	check(not ap.active and hd.active, "the hide button stops the apples and starts hide and seek")
+	await until(func(): return not hd.spot_taps.is_empty(), 20.0)
+	await wait(1.5)
+	await shot("help-0-hidden")
+	await wait(Station.HINT_AFTER + 1.0)
+	check(hd.hint_node != null, "after 10 s a star points at a hiding friend")
+	await shot("help-1-hint")
+	await until(func(): return not hd.found.is_empty(), Station.HINT_AFTER * 2 + 4.0)
+	check(not hd.found.is_empty(), "after a few hints a friend comes out by itself")
+	await shot("help-2-rescued")
+	# the pond button stops hide and seek cleanly
+	var pd := station("pond3d") as Node
+	garden.go_play(pd)
+	check(hd.friends.is_empty() and hd.spot_taps.is_empty(), "stopping hide and seek clears it away")
+	await until(func(): return pd._playing, 15.0)
+	await wait(Station.HINT_AFTER + 0.5)
+	check(pd.slow_next or pd.hint_node != null, "the pond helps after 10 s")
+	await until(func(): return pd.got > 0, Station.HINT_AFTER * 2 + 6.0)
+	check(pd.got > 0, "the pond helps a fish into the basket")
+	pd.abort()
+	ap.level = 1
+	hd.level = 1
+	pd.level = 1
+	Game.stars = 0
+	await wait(1.0)
 
 func apples(lv: int) -> void:
 	var st := station("apples3d") as Node

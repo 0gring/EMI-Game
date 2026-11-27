@@ -19,6 +19,8 @@ var step_t := 0.0
 var ground: Callable       # (x, z) -> ground height
 var bounds: Callable       # Vector3 -> Vector3, kept on the island
 var facing := 1.0
+var best_d := INF          # closest it has come to the target
+var stuck_t := 0.0         # time since it last came closer
 
 func _ready() -> void:
 	view = SubViewport.new()
@@ -58,6 +60,8 @@ func _ready() -> void:
 
 func walk_to(p: Vector3) -> void:
 	target = p
+	best_d = INF
+	stuck_t = 0.0
 
 func stop() -> void:
 	target = Vector3.INF
@@ -82,7 +86,14 @@ func _process(dt: float) -> void:
 	var to := target - global_position
 	to.y = 0
 	var d := to.length()
-	if d < 0.08:
+	# arrived - or as close as it can get (a pond or the shore in the way):
+	# a walker that stops getting closer counts as arrived, so nothing waits forever
+	if d < best_d - 0.02:
+		best_d = d
+		stuck_t = 0.0
+	else:
+		stuck_t += dt
+	if d < 0.08 or stuck_t > 0.6:
 		target = Vector3.INF
 		arrived.emit()
 		return

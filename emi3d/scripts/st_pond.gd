@@ -20,9 +20,12 @@ var jump_t := 0.0
 var jumpers: Array = []        # {node, kind, a, b, t, secs, tap}
 var only_orange := false
 var in_basket: Array[Node3D] = []
+var slow_next := false
 
 func setup() -> void:
 	id = "pond3d"
+	title = "בואי נדוג דגים לחתול!"
+	icon = "res://ui/fish.png"
 	var pond: Dictionary = garden.layout["pond"]
 	var pp: Array = pond["pos"]
 	pond_c = Vector3(pp[0], pp[1], pp[2])
@@ -40,6 +43,8 @@ func setup() -> void:
 	place_model("lily", pond_c + Vector3(1.2, 0.03, 0.5), 2.0, 0.8)
 	frog = friend("frog", Vector2(lily.global_position.x, lily.global_position.z), 0.75)
 	frog.global_position.y = pond_c.y + 0.06
+	# a dome over the water only, so taps on the grass round it still walk
+	start_on(pond_c - Vector3(0, 0.8, 0), minf(rx, rz) * 0.85)
 
 func marker_height() -> float:
 	return 2.6
@@ -57,7 +62,7 @@ func tick(dt: float) -> void:
 		return
 	jump_t += dt
 	var gap: float = [2.0, 1.7, 1.4, 1.2][level - 1]
-	if got < need and jump_t > gap and jumpers.size() < 2:
+	if _playing and got < need and jump_t > gap and jumpers.size() < 2:
 		jump_t = randf_range(-0.3, 0.3)
 		_leap("frog" if randf() < 0.15 and not _frog_busy() else ("fish_blue" if only_orange and randf() < 0.4 else ("fish_orange" if randf() < 0.75 or only_orange else "fish_blue")))
 	for j in jumpers.duplicate():
@@ -101,7 +106,14 @@ func _leap(kind: String) -> void:
 	else:
 		n = place_model(kind, a, 0.0, 2.4)
 		_splash(a, false, 0.5)
-	var j := {"node": n, "kind": kind, "a": a, "b": b, "t": 0.0, "secs": randf_range(1.1, 1.4) - level * 0.06, "h": randf_range(1.5, 2.1), "tap": null}
+	var secs := randf_range(1.5, 1.8) - level * 0.08
+	var j := {"node": n, "kind": kind, "a": a, "b": b, "t": 0.0, "secs": secs, "h": randf_range(1.5, 2.1), "tap": null}
+	if slow_next and kind != "frog" and not (only_orange and kind == "fish_blue"):
+		# a hint: this fish leaps slowly with a star over it
+		slow_next = false
+		j["secs"] = secs * 2.2
+		j["hint"] = true
+		point_at(a + Vector3(0, 0.9, 0), j["secs"])
 	j["tap"] = garden.add_tap(a, 0.85 if kind != "frog" else 0.8, _catch.bind(j))
 	jumpers.append(j)
 
@@ -133,6 +145,7 @@ func _catch(j: Dictionary) -> void:
 		n.queue_free()
 		return
 	got += 1
+	progress()
 	var c := got
 	Game.note("xylophone", 64 + [0, 2, 4, 5, 7, 9][mini(c - 1, 5)])
 	say(COUNT[mini(c - 1, COUNT.size() - 1)] + "!")
@@ -143,6 +156,46 @@ func _catch(j: Dictionary) -> void:
 	in_basket.append(n)
 	if c == need:
 		_cat_eats()
+
+## Stuck: the next good fish leaps slowly, with a star over it.
+func help() -> void:
+	slow_next = true
+	jump_t = 99.0
+	say("נגעי בדג כשהוא באוויר!")
+
+## Still stuck: a fish leaps right into the basket by itself.
+func rescue() -> void:
+	var a := pond_c + Vector3(0.5, -0.05, 0.3)
+	var n := place_model("fish_orange", a, 0.0, 2.4)
+	_splash(a, false, 0.5)
+	say("דג אחד קפץ לבד לסל!")
+	got += 1
+	progress()
+	var c := got
+	var my := run
+	var into := basket.global_position + Vector3(randf_range(-0.12, 0.12), 0.3, randf_range(-0.08, 0.08))
+	await fly(n, a, into, 1.0, 1.8, 6.0).finished
+	if not alive(my):
+		n.queue_free()
+		return
+	n.rotation = Vector3(0, 0, PI / 2)
+	in_basket.append(n)
+	if c == need:
+		_cat_eats()
+
+func cleanup() -> void:
+	slow_next = false
+	for j in jumpers:
+		if j["tap"]:
+			garden.remove_tap(j["tap"])
+		if j["kind"] != "frog":
+			j["node"].queue_free()
+	jumpers.clear()
+	frog.global_position = lily.global_position + Vector3(0, 0.06, 0)
+	frog.set_meta("on_head", false)
+	for f in in_basket:
+		f.queue_free()
+	in_basket.clear()
 
 func _frog_on_head() -> void:
 	frog.set_meta("on_head", true)
@@ -175,9 +228,12 @@ func _cat_eats() -> void:
 		else:
 			_frog_home()
 	jumpers.clear()
+	var my := run
 	await wait(0.6)
+	if not alive(my):
+		return
 	cat.walk_to(basket.global_position + Vector3(0.5, 0, 0.2))
-	await cat.arrived
+	await arrive(cat)
 	say("מיאו! תודה! החתול אוכל דגים!")
 	Game.slide("flute", 76, [[0, 1.0], [0.25, 1.15], [0.5, 0.85]], 0.5)
 	for k in 3:

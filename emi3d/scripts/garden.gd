@@ -28,12 +28,12 @@ func _ready() -> void:
 	_decorate()
 	_luli()
 	_camera()
-	_hud()
 	for s in [preload("res://scripts/st_apples.gd"), preload("res://scripts/st_hide.gd"), preload("res://scripts/st_pond.gd")]:
 		var st: Node3D = s.new()
 		st.garden = self
 		add_child(st)
 		station_list.append(st)
+	_hud()
 	var sh := Shot.new()
 	add_child(sh)
 	if "--autotest" in OS.get_cmdline_user_args():
@@ -289,24 +289,27 @@ var cam_focus := Vector3.INF
 var cam_off := CAM_OFF
 var focus_owner: Node
 var focus_off := CAM_NEAR
+var focus_fov := 42.0
 
 ## The camera comes closer to a game (INF: back to following Luli).
-func focus(p: Vector3, owner: Node, off := CAM_NEAR) -> void:
+func focus(p: Vector3, owner: Node, off := CAM_NEAR, fov := 42.0) -> void:
 	cam_focus = p
 	focus_owner = owner
 	focus_off = off
+	focus_fov = fov if p != Vector3.INF else 42.0
 
 func _place_cam(k: float) -> void:
 	var want := luli.global_position + Vector3(0, 0.6, 0)
 	# keep the view inside the island a little, so the sea frames it
-	want.x = clampf(want.x, -8.0, 8.0)
-	want.z = clampf(want.z, -8.0, 6.0)
+	want.x = clampf(want.x, -11.0, 11.0)
+	want.z = clampf(want.z, -10.0, 11.0)
 	var off := CAM_OFF
 	if cam_focus != Vector3.INF:
 		want = cam_focus
 		off = focus_off
 	cam_target = cam_target.lerp(want, k)
 	cam_off = cam_off.lerp(off, k)
+	cam.fov = lerpf(cam.fov, focus_fov, k)
 	cam.global_position = cam_target + cam_off
 	cam.look_at(cam_target, Vector3.UP)
 
@@ -316,7 +319,9 @@ func _process(dt: float) -> void:
 
 # --- tapping ---------------------------------------------------------------------------------
 ## A station registers what can be tapped: a sphere of radius r at a point.
-func add_tap(at: Vector3, r: float, cb: Callable) -> Area3D:
+## `start` taps (a game's star and things) only work while no game is on;
+## during a game a tap passes through them to what is behind.
+func add_tap(at: Vector3, r: float, cb: Callable, start := false) -> Area3D:
 	var a := Area3D.new()
 	a.collision_layer = 2
 	a.collision_mask = 0
@@ -328,7 +333,7 @@ func add_tap(at: Vector3, r: float, cb: Callable) -> Area3D:
 	a.add_child(cs)
 	add_child(a)
 	a.global_position = at
-	taps.append([a, cb])
+	taps.append([a, cb, start])
 	return a
 
 func remove_tap(a: Area3D) -> void:
@@ -355,28 +360,42 @@ func tap_screen(pos: Vector2) -> void:
 	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 200.0)
 	q.collide_with_areas = true
 	q.collision_mask = 2
-	var hit := space.intersect_ray(q)
-	if hit:
+	var skip: Array[RID] = []
+	for i in 8:
+		q.exclude = skip
+		var hit := space.intersect_ray(q)
+		if not hit:
+			break
+		var entry: Array = []
 		for t in taps:
 			if t[0] == hit["collider"]:
-				(t[1] as Callable).call()
-				return
-	if busy:
-		for s in station_list:
-			if s.has_method("tap_ground") and s.active:
-				q.collision_mask = 1
-				q.collide_with_areas = false
-				var g := space.intersect_ray(q)
-				if g:
-					s.tap_ground(g["position"])
+				entry = t
+				break
+		if entry.is_empty() or (entry[2] and busy):
+			skip.append(hit["rid"])
+			continue
+		(entry[1] as Callable).call()
 		return
 	q.collision_mask = 1
 	q.collide_with_areas = false
+	q.exclude = []
 	var g := space.intersect_ray(q)
-	if g:
-		var p: Vector3 = g["position"]
-		luli.walk_to(keep_on(p))
-		Fx.burst(Game.fx, pos, [Color("#ffffff"), Color("#ffe0f0")], 6, 0.3)
+	if not g:
+		return
+	var p: Vector3 = g["position"]
+	if busy:
+		for s in station_list:
+			if s.active and s.has_method("tap_ground"):
+				s.tap_ground(p)
+		return
+	luli.walk_to(keep_on(p))
+	Fx.burst(Game.fx, pos, [Color("#ffffff"), Color("#ffe0f0")], 6, 0.3)
+
+## Starting one game stops any other that is on.
+func stop_others(st: Node) -> void:
+	for s in station_list:
+		if s != st and s.active:
+			s.abort()
 
 # --- talking, stars --------------------------------------------------------------------------
 var bubble: PanelContainer
@@ -425,6 +444,52 @@ func _hud() -> void:
 	star_box.anchor_right = 1.0
 	star_box.position = Vector2(get_viewport().get_visible_rect().size.x - 240, 40)
 	hud.add_child(star_box)
+	_game_buttons()
+
+## A round button for every game at the side of the screen: Luli goes there.
+var game_buttons: Array = []
+
+func _game_buttons() -> void:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 26)
+	hud.add_child(col)
+	var vs := get_viewport().get_visible_rect().size
+	for st in station_list:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(150, 150)
+		b.focus_mode = Control.FOCUS_NONE
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(1, 1, 1, 0.92)
+		sb.set_corner_radius_all(75)
+		sb.border_color = Color("#ffd84a")
+		sb.set_border_width_all(6)
+		sb.shadow_color = Color(0.3, 0.2, 0.4, 0.25)
+		sb.shadow_size = 10
+		for k in ["normal", "hover", "pressed", "focus"]:
+			b.add_theme_stylebox_override(k, sb)
+		var icon := TextureRect.new()
+		icon.texture = load(st.icon)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.set_anchors_preset(Control.PRESET_FULL_RECT)
+		icon.offset_left = 22
+		icon.offset_top = 22
+		icon.offset_right = -22
+		icon.offset_bottom = -22
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(icon)
+		b.pressed.connect(go_play.bind(st))
+		col.add_child(b)
+		game_buttons.append(b)
+	col.position = Vector2(vs.x - 190, vs.y * 0.5 - (150 * station_list.size() + 26 * (station_list.size() - 1)) / 2.0 + 40)
+
+## A game's button: Luli goes and plays it (stopping any other).
+func go_play(st: Node) -> void:
+	if st.active:
+		return
+	Game.play("tap")
+	say(st.title)
+	st.begin()
 
 func add_star(n := 1) -> void:
 	Game.add_stars(n)
