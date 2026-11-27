@@ -1,0 +1,108 @@
+# Builds "הגן של אמי" - the 3D garden game in emi3d/ - as an installable
+# Android app (APK) and publishes it as the release "garden3d-latest":
+#
+#   https://github.com/0gring/EMI-Game/releases/download/garden3d-latest/emi-garden-3d.apk
+#
+# emi3d/ shares the characters, sounds and speech of godot/ through symlinks,
+# so a change there rebuilds this app too. The 3D models are already built
+# (emi3d/models, from emi3d/tools/build_models.py with sand3d), so CI only
+# play-tests and exports. It is a separate app (its own package name) next to
+# the 2D one; same signing key; version code is the run number plus 100.
+
+name: Android app (3D garden)
+
+on:
+  push:
+    paths:
+      - 'emi3d/**'
+      - 'godot/**'
+      - 'android/app/emi-island.keystore'
+      - '.github/workflows/android3d.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android3d-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.1
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          godot --version
+
+      - name: Cache export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          key: godot-templates-${{ env.GODOT_VERSION }}
+
+      - name: Install export templates
+        if: steps.templates.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+
+      # Godot finds the Android SDK and JDK through its editor settings.
+      - name: Point Godot at the Android SDK
+        run: |
+          mkdir -p ~/.config/godot
+          for f in editor_settings-4.tres "editor_settings-${GODOT_VERSION%.*}.tres"; do
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' \
+              "$ANDROID_HOME" "$JAVA_HOME" > ~/.config/godot/$f
+          done
+
+      - name: Import the project
+        run: godot --headless --path emi3d --import || true
+
+      - name: Play-test the game
+        run: |
+          godot --headless --path emi3d -- --autotest 2>&1 | tee autotest.log
+          grep -q "^PASS" autotest.log
+          ! grep -q "SCRIPT ERROR" autotest.log
+
+      - name: Export the APK
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/android/app/emi-island.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: emi
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: emi-island
+        run: |
+          sed -i "s/^version\/code=.*/version\/code=$((GITHUB_RUN_NUMBER + 100))/" emi3d/export_presets.cfg
+          sed -i "s/^version\/name=.*/version\/name=\"1.0.${GITHUB_RUN_NUMBER}\"/" emi3d/export_presets.cfg
+          godot --headless --path emi3d --export-release "Android" "$PWD/emi-garden-3d.apk"
+          ls -la emi-garden-3d.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: emi-garden-3d-apk
+          path: emi-garden-3d.apk
+
+      - name: Publish the download link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete garden3d-latest --yes --cleanup-tag || true
+          gh release create garden3d-latest emi-garden-3d.apk \
+            --target "$GITHUB_SHA" \
+            --title "הגן של אמי (3D) - Android" \
+            --notes "Build ${GITHUB_RUN_NUMBER} from ${GITHUB_SHA::7} (${GITHUB_REF_NAME}). Open this page on the tablet and tap emi-garden-3d.apk to install. A separate app next to האי הקסום של אמי."
