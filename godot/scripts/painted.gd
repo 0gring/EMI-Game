@@ -62,7 +62,6 @@ const KITS := {
 	},
 	"fox": {
 		"kit": "fox",
-		"eye_kit": "bear",
 		"head_h": 600,
 		"ears": {"x": 180, "y": -180, "h": 260, "anchor": Vector2(0.5, 0.95), "rot": 0.3},
 		"tail": {"pos": Vector2(150, -120), "h": 430, "anchor": Vector2(0.12, 0.85)},
@@ -87,19 +86,30 @@ const KITS := {
 		"tail": {"pos": Vector2(140, -150), "h": 170, "anchor": Vector2(0.05, 0.5)},
 		"eyes": {"x": 140, "y": -50, "h": 150, "happy_h": 70, "happy_y": -55},
 		# whole muzzles, each pinned to the painted head's nose
-		"mouth": {"y": 65, "px": 0.79, "anchors": {"smile": Vector2(0.48, 0.29), "open": Vector2(0.48, 0.22),
+		"mouth": {"y": 65, "h": 90, "px": 0.79, "anchors": {"smile": Vector2(0.48, 0.29), "open": Vector2(0.48, 0.22),
 			"o": Vector2(0.5, 0.18), "grin": Vector2(0.48, 0.26), "tongue": Vector2(0.47, 0.27)}},
 		"cheeks": {"x": 235, "y": 70},
 	},
 	"cat": {
 		"kit": "cat",
-		"eye_kit": "dog",
 		"head_h": 600,
 		"ears": {"x": 165, "y": -195, "h": 270, "anchor": Vector2(0.5, 0.92), "rot": 0.25},
 		"tail": {"pos": Vector2(140, -150), "h": 150, "anchor": Vector2(0.04, 0.35)},
-		# eyes laid over the painted closed ones until the cat's face sheet comes
+		# eyes laid over the closed ones painted on the head
 		"eyes": {"x": 136, "y": -116, "h": 150, "happy_h": 70, "happy_y": -120},
-		"mouth": {"y": 142, "h": 90, "idle": ""},
+		# the painted head's own smile when idle; whole muzzles, pinned by the nose, otherwise
+		"mouth": {"y": 84, "h": 90, "idle": "", "px": 0.75, "anchors": {"open": Vector2(0.47, 0.16), "o": Vector2(0.5, 0.17),
+			"grin": Vector2(0.49, 0.16), "tongue": Vector2(0.49, 0.18)}},
 		"cheeks": {"x": 225, "y": 60},
+	},
+	"bunny": {
+		"kit": "bunny",
+		"head_h": 600,
+		"ears": {"x": 140, "y": -220, "h": 470, "anchor": Vector2(0.5, 0.95), "rot": 0.15},
+		"tail": {"pos": Vector2(140, -130), "h": 130, "anchor": Vector2(0.3, 0.5)},
+		"eyes": {"x": 140, "y": -40, "h": 150, "happy_h": 70, "happy_y": -45},
+		"mouth": {"y": 95, "h": 90, "px": 0.6, "anchors": {"smile": Vector2(0.49, 0.24), "open": Vector2(0.5, 0.12),
+			"o": Vector2(0.49, 0.16), "grin": Vector2(0.5, 0.12)}},
+		"cheeks": {"x": 230, "y": 90},
 	},
 }
