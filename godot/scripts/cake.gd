@@ -101,7 +101,9 @@ func on_level_up() -> void:
 	pass    # the next cake reads the new level in new_cake()
 
 func build() -> void:
-	W = minf(size.x * 0.34, size.y * 0.66)
+	# three tiers, candles and their flames must all fit under the top of the
+	# screen, also on wide phones where the width allows a bigger cake
+	W = minf(size.x * 0.34, size.y * 0.52)
 	table_y = size.y * 0.74
 	table = Table.new()
 	table.y0 = table_y
@@ -109,14 +111,14 @@ func build() -> void:
 	table.h = size.y
 	table.z_index = 6
 	add_child(table)
-	cake_root = Node2D.new()
-	cake_root.z_index = 7
-	add_child(cake_root)
 	stand = Sprite2D.new()
 	stand.texture = World.tex("cake_stand")
 	stand.centered = false
 	add_child(stand)
 	stand.z_index = 7
+	cake_root = Node2D.new()     # after the stand: the cake sits on the plate, in front of it
+	cake_root.z_index = 7
+	add_child(cake_root)
 	tray = Node2D.new()
 	tray.z_index = 12
 	tray.draw.connect(_draw_tray)
@@ -124,12 +126,19 @@ func build() -> void:
 	_place_stand()
 
 func _place_stand() -> void:
-	var ss := W * 1.22 / 484.0
-	var sy := ss * 0.5     # a low pedestal: the cake is the star, not the stand
+	# where the plate and foot are on the stand's canvas: the drawn stand is a
+	# flat plate seen edge-on, the painted one an oval plate seen from above
+	var painted := stand.texture.resource_path.ends_with(".png")
+	var plate_w := 338.0 if painted else 484.0
+	var plate_x := 255.0 if painted else 256.0
+	var seat := 145.0 if painted else 62.0      # where the cake's bottom rests
+	var foot := 278.0 if painted else 282.0
+	var ss := W * 1.22 / plate_w
+	var sy := ss * (0.62 if painted else 0.5)   # a low pedestal: the cake is the star, not the stand
 	stand.scale = Vector2(ss, sy)
 	# the stand's foot rests on the table, the cake sits on its plate
-	var plate_y := table_y + size.y * 0.05 - (282.0 - 62.0) * sy
-	stand.position = Vector2(size.x / 2 - 256.0 * ss, plate_y - 62.0 * sy)
+	var plate_y := table_y + size.y * 0.05 - (foot - seat) * sy
+	stand.position = Vector2(size.x / 2 - plate_x * ss, plate_y - seat * sy)
 	cake_root.position = Vector2(size.x / 2, plate_y)
 
 # --- the table and the guests ---------------------------------------------------------

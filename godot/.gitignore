@@ -2,3 +2,4 @@
 .godot/
 *.apk
 *.aab
+__pycache__/

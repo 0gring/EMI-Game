@@ -43,6 +43,8 @@ BOX = {
 }
 BOTTOM = {'tree', 'tree_blossom', 'bush', 'cake_candle', 'garden_soil', 'shroom_red', 'shroom_brown',
           'rock', 'clump_a', 'clump_b', 'cake_stand'}
+# fill the old box's height even if wider: the candle's flame is placed by its top
+FULL_HEIGHT = {'cake_candle'}
 # sheet, key, min-area, {piece index: name}
 SHEETS = [
     ('props_cake', 'green', '0.0005', {1: '-', 2: 'cake_stand', 3: 'cake_candle', 4: 'cake_flame', 5: 'cake_cherry',
@@ -78,6 +80,8 @@ def strip_flame(im: Image.Image) -> Image.Image:
 def fit(im: Image.Image, name: str) -> Image.Image:
     cw, ch, bx, by, bw, bh = BOX[name]
     s = min(bw / im.width, bh / im.height)
+    if name in FULL_HEIGHT:
+        s = bh / im.height
     w, h = max(1, round(im.width * s)), max(1, round(im.height * s))
     piece = im.resize((w, h), Image.LANCZOS)
     canvas = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
