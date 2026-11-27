@@ -36,7 +36,34 @@ func setup(mood := {}, keep_clear: Array[Rect2] = [], density := 1.0) -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	for i in 4:
+	# Painted backdrop (generated art, see tools/make_bg.py) over the shader:
+	# a sky with its own sun and clouds, and rolling hills from the horizon down.
+	var painted := ResourceLoader.exists("res://art/bg/sky.jpg") and ResourceLoader.exists("res://art/bg/hills.png")
+	if painted:
+		var sky := Sprite2D.new()
+		sky.texture = load("res://art/bg/sky.jpg")
+		sky.centered = false
+		var ss := maxf(size.x / sky.texture.get_width(), size.y / sky.texture.get_height())
+		sky.scale = Vector2(ss, ss)
+		add_child(sky)
+		# the painted sun breathes a little light
+		var sun := Sprite2D.new()
+		sun.texture = tex("glow")
+		sun.position = Vector2(0.775, 0.37) * sky.texture.get_size() * ss
+		sun.scale = Vector2.ONE * size.y / 300.0
+		sun.modulate = Color(1, 0.95, 0.8, 0.35)
+		sun.set_meta("sun", true)
+		add_child(sun)
+		var hills := Sprite2D.new()
+		hills.texture = load("res://art/bg/hills.png")
+		hills.centered = false
+		var hy0 := horizon * size.y - size.y * 0.04
+		var hs := maxf(size.x / hills.texture.get_width(), (size.y - hy0) / hills.texture.get_height())
+		hills.scale = Vector2(hs, hs)
+		hills.position = Vector2((size.x - hills.texture.get_width() * hs) / 2.0, hy0)
+		add_child(hills)
+
+	for i in (0 if painted else 4):
 		var c := Sprite2D.new()
 		c.texture = tex("cloud")
 		var s := randf_range(0.45, 0.8)
@@ -146,6 +173,9 @@ func _process(dt: float) -> void:
 		for i in 2:
 			var w: Sprite2D = b.get_child(i)
 			w.scale.x = (-1 if i == 0 else 1) * 0.12 * (0.25 + flap * 0.75)
+	for c in get_children():
+		if c is Sprite2D and c.has_meta("sun"):
+			c.modulate.a = 0.3 + 0.12 * sin(t * 1.3)
 	for m in motes:
 		var ph: float = m.get_meta("ph")
 		m.position.y -= dt * float(m.get_meta("v"))

@@ -70,4 +70,14 @@ const KITS := {
 		"mouth": {"y": 160, "h": 80},
 		"cheeks": {"x": 225, "y": 70},
 	},
+	"panda": {
+		"kit": "panda",
+		"head_h": 620,
+		"ears": {"x": 245, "y": -215, "h": 220, "anchor": Vector2(0.5, 0.75), "rot": 0.2},
+		"tail": {"pos": Vector2(140, -130), "h": 110, "anchor": Vector2(0.3, 0.5)},
+		# eyes sit inside the painted black patches
+		"eyes": {"x": 128, "y": -45, "h": 140, "happy_h": 60, "happy_y": -50},
+		"mouth": {"y": 150, "h": 70},
+		"cheeks": {"x": 235, "y": 75},
+	},
 }
