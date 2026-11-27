@@ -262,8 +262,15 @@ func _eat(n: int) -> void:
 	diner.squash_v += 10.0
 	diner.feel("happy", 0.6)
 	tummy += 0.06
-	diner.parts["body"].scale = Vector2.ONE * 1.4 * diner.u * tummy
-	diner.parts["belly"].scale = Vector2.ONE * 0.95 * diner.u * tummy
+	# grow from the body's own size, drawn or painted
+	var body: Node2D = diner.parts["body"]
+	var base: Vector2 = body.get_meta("base", Vector2.ONE * 1.4 * diner.u)
+	body.set_meta("base", base)
+	body.scale = base * tummy
+	var belly: Node2D = diner.parts["belly"]
+	var bbase: Vector2 = belly.get_meta("base", belly.scale)
+	belly.set_meta("base", bbase)
+	belly.scale = bbase * tummy
 	Game.play("pop", 0.7, 0.8)
 	Game.note("xylophone", ["C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6", "D6", "E6"][n - 1], 0.6)
 	var pl := plates[n - 1]

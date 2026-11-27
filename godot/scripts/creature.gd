@@ -97,6 +97,10 @@ func build() -> void:
 		c.queue_free()
 	parts.clear()
 	u = height / 1000.0
+	# a species with painted art is built from it instead (see painted.gd)
+	if Painted.KITS.has(species):
+		_build_painted(Painted.KITS[species])
+		return
 	var sp: Dictionary = SPECIES.get(species, SPECIES["bunny"])
 	var col := Color(sp["color"])
 	var light := Color(sp["light"])
@@ -211,6 +215,102 @@ func build() -> void:
 	if sp.get("horn", false):
 		parts["horn"] = spr("horn", head, Vector2(20, -330), 0.9)
 		parts["horn"].rotation = 0.1
+	set_mouth("smile")
+
+# --- painted characters ---------------------------------------------------------
+
+## A painted piece (art/<kit>/<name>.png) scaled so its height is `h` design
+## units, with its anchor (0..1 inside the picture) at `pos`.
+func piece(kit: String, name: String, parent: Node, pos: Vector2, h: float, anchor := Vector2(0.5, 0.5), flip := false) -> Sprite2D:
+	var s := Sprite2D.new()
+	s.texture = load("res://art/%s/%s.png" % [kit, name])
+	var size := s.texture.get_size()
+	var k := h * u / size.y
+	s.scale = Vector2(-k if flip else k, k)
+	s.offset = (Vector2(0.5, 0.5) - anchor) * size
+	s.position = pos * u
+	parent.add_child(s)
+	return s
+
+func _has(kit: String, name: String) -> bool:
+	return ResourceLoader.exists("res://art/%s/%s.png" % [kit, name])
+
+## Builds the same named parts the drawn rig has, from painted pieces, so all
+## the life in _pose and _face works unchanged.
+func _build_painted(cfg: Dictionary) -> void:
+	var kit: String = cfg["kit"]
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var shadow := spr("glow", self, Vector2(0, 0), 2.2, Color(0.2, 0.1, 0.3, 0.28))
+	shadow.scale.y *= 0.28
+	parts["shadow"] = shadow
+	root = Node2D.new()
+	add_child(root)
+	body_pivot = Node2D.new()
+	body_pivot.position = Vector2(0, -60) * u
+	root.add_child(body_pivot)
+
+	if cfg.has("tail") and _has(kit, "tail"):
+		var tl: Dictionary = cfg["tail"]
+		parts["tail"] = piece(kit, "tail", body_pivot, tl["pos"], tl["h"], tl["anchor"])
+	parts["leg_l"] = piece(kit, "leg_l", body_pivot, Vector2(-95, -210), 270, Vector2(0.5, 0.05))
+	parts["leg_r"] = piece(kit, "leg_r", body_pivot, Vector2(95, -210), 270, Vector2(0.5, 0.05))
+	parts["body"] = piece(kit, "body", body_pivot, Vector2(0, -215), 470)
+	parts["body"].set_meta("base", parts["body"].scale)
+	parts["belly"] = Node2D.new()      # painted bodies carry their own belly
+	body_pivot.add_child(parts["belly"])
+	parts["arm_l"] = piece(kit, "arm_l", body_pivot, Vector2(-160, -400), 290, Vector2(0.5, 0.06))
+	parts["arm_r"] = piece(kit, "arm_r", body_pivot, Vector2(160, -400), 290, Vector2(0.5, 0.06))
+	for a in ["arm_l", "arm_r"]:
+		parts[a].set_meta("rest", cfg.get("arm_rest", 0.12))
+
+	head = Node2D.new()
+	head.position = Vector2(0, -620) * u
+	body_pivot.add_child(head)
+	for e in cfg.get("behind_head", []):
+		var p := piece(kit, e[0], head, e[1], e[2], e[3])
+		p.rotation = e[4]
+	if cfg.has("ears"):
+		var ec: Dictionary = cfg["ears"]
+		for side in [-1, 1]:
+			var pivot := Node2D.new()
+			pivot.position = Vector2(side * float(ec["x"]), ec["y"]) * u
+			head.add_child(pivot)
+			var an: Vector2 = ec["anchor"]
+			if side > 0:
+				an.x = 1.0 - an.x
+			piece(kit, "ear_l" if side < 0 else "ear_r", pivot, Vector2.ZERO, ec["h"], an)
+			parts["ear_l" if side < 0 else "ear_r"] = pivot
+	parts["head"] = piece(kit, "head", head, Vector2(0, cfg.get("head_y", 0)), cfg["head_h"])
+	for e in cfg.get("over_head", []):
+		var p := piece(kit, e[0], head, e[1], e[2], e[3])
+		p.rotation = e[4]
+
+	var ey: Dictionary = cfg["eyes"]
+	for side in [-1, 1]:
+		var key := "l" if side < 0 else "r"
+		# the right eye is mirrored so painted lashes sit on the outside
+		var e := piece(kit, "eye", head, Vector2(side * float(ey["x"]), ey["y"]), ey["h"], Vector2(0.5, 0.5), side > 0)
+		e.set_meta("s", absf(e.scale.x))
+		e.set_meta("flip", -1.0 if side > 0 else 1.0)
+		parts["eye_" + key] = e
+		if _has(kit, "eye_happy"):
+			parts["happy_" + key] = piece(kit, "eye_happy", head, Vector2(side * float(ey["x"]), ey.get("happy_y", ey["y"])), ey["happy_h"], Vector2(0.5, 0.5), side > 0)
+		else:
+			parts["happy_" + key] = spr("eye_happy", head, Vector2(side * float(ey["x"]), ey["y"]), 0.4)
+		var ck: Dictionary = cfg["cheeks"]
+		parts["cheek_" + key] = spr("cheek", head, Vector2(side * float(ck["x"]), ck["y"]), 0.42)
+
+	var mc: Dictionary = cfg["mouth"]
+	var mouths := {}
+	for m in ["smile", "open", "o", "grin", "tongue"]:
+		if m == "smile" and mc.has("idle"):
+			mouths[m] = Node2D.new()          # the painted face's own smile
+			head.add_child(mouths[m])
+		elif _has(kit, "mouth_" + m):
+			mouths[m] = piece(kit, "mouth_" + m, head, Vector2(0, mc["y"]), mc["h"])
+		else:
+			mouths[m] = spr("mouth_" + m, head, Vector2(0, mc["y"]), 0.45 * float(mc["h"]) / 110.0)
+	parts["mouths"] = mouths
 	set_mouth("smile")
 
 func set_mouth(m: String) -> void:
