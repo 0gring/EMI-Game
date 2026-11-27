@@ -80,4 +80,26 @@ const KITS := {
 		"mouth": {"y": 150, "h": 70},
 		"cheeks": {"x": 235, "y": 75},
 	},
+	"dog": {
+		"kit": "dog",
+		"head_h": 640,
+		"ears": {"x": 335, "y": -150, "h": 400, "anchor": Vector2(0.62, 0.08), "rot": 0.1},
+		"tail": {"pos": Vector2(140, -150), "h": 170, "anchor": Vector2(0.05, 0.5)},
+		"eyes": {"x": 140, "y": -50, "h": 150, "happy_h": 70, "happy_y": -55},
+		# whole muzzles, each pinned to the painted head's nose
+		"mouth": {"y": 65, "px": 0.79, "anchors": {"smile": Vector2(0.48, 0.29), "open": Vector2(0.48, 0.22),
+			"o": Vector2(0.5, 0.18), "grin": Vector2(0.48, 0.26), "tongue": Vector2(0.47, 0.27)}},
+		"cheeks": {"x": 235, "y": 70},
+	},
+	"cat": {
+		"kit": "cat",
+		"eye_kit": "dog",
+		"head_h": 600,
+		"ears": {"x": 165, "y": -195, "h": 270, "anchor": Vector2(0.5, 0.92), "rot": 0.25},
+		"tail": {"pos": Vector2(140, -150), "h": 150, "anchor": Vector2(0.04, 0.35)},
+		# eyes laid over the painted closed ones until the cat's face sheet comes
+		"eyes": {"x": 136, "y": -116, "h": 150, "happy_h": 70, "happy_y": -120},
+		"mouth": {"y": 142, "h": 90, "idle": ""},
+		"cheeks": {"x": 225, "y": 60},
+	},
 }

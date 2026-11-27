@@ -31,6 +31,10 @@ BOX = {
     'mouth_smile': (512, 512, 141, 211, 230, 101), 'mouth_open': (512, 512, 141, 201, 230, 131),
     'mouth_o': (512, 512, 181, 171, 150, 182), 'mouth_grin': (512, 512, 101, 191, 310, 168),
     'cheek': (512, 512, 67, 136, 378, 239),
+    'food_apple': (512, 512, 85, 56, 342, 374), 'food_carrot': (512, 512, 148, 16, 218, 440),
+    'food_banana': (512, 512, 96, 140, 340, 232), 'food_strawberry': (512, 512, 89, 130, 334, 326),
+    'food_cheese': (512, 512, 84, 134, 352, 252), 'food_grapes': (512, 512, 112, 33, 282, 405),
+    'food_fish': (512, 512, 84, 171, 382, 170), 'food_bone': (512, 512, 122, 85, 281, 288),
     # new props: canvas = the piece itself, bottom-centred
     'tree_blossom': (512, 512, 35, 12, 437, 458),
     'shroom_red': (256, 256, 28, 20, 200, 216), 'shroom_brown': (256, 256, 28, 20, 200, 216),
@@ -47,14 +51,18 @@ SHEETS = [
     ('props_garden', 'magenta', '0.0015', {0: 'garden_can', 1: 'garden_soil', 2: 'garden_seed', 10: 'garden_bee'}),
     ('props_scenery', 'magenta', '0.0015', {0: 'tree', 1: 'tree_blossom', 2: 'bush', 3: 'cloud', 4: 'shroom_brown',
                                             5: 'shroom_red', 6: 'clump_a', 7: 'rock', 8: 'clump_b'}),
+    ('props_food', 'magenta strict', '0.0015', {0: 'food_carrot', 1: 'food_apple', 2: 'food_banana', 3: 'food_strawberry',
+                                                 4: 'food_cookie', 5: 'food_cheese', 6: 'food_grapes', 7: 'food_fish',
+                                                 8: 'food_bone'}),
     ('mouths', 'green', '0.0015', {0: 'cheek', 1: 'mouth_smile', 4: 'mouth_open', 6: 'mouth_o', 8: 'mouth_grin'}),
 ]
 
 
 def cut(sheet, key, area, tmp):
     d = Path(tmp) / sheet
+    key, *flags = key.split()
     subprocess.run([sys.executable, 'tools/cutout.py', str(SRC / f'{sheet}.jpg'), str(d), '--key', key,
-                    '--min-area', area], check=True, capture_output=True)
+                    '--min-area', area] + [f'--{x}' for x in flags], check=True, capture_output=True)
     return d
 
 

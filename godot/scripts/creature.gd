@@ -308,6 +308,11 @@ func _build_painted(cfg: Dictionary) -> void:
 		if m == "smile" and mc.has("idle"):
 			mouths[m] = Node2D.new()          # the painted face's own smile
 			head.add_child(mouths[m])
+		elif _has(kit, "mouth_" + m) and mc.has("px"):
+			# whole muzzles from a face sheet: one scale for all, each pinned by its nose
+			var tex: Texture2D = load("res://art/%s/mouth_%s.png" % [kit, m])
+			var an: Vector2 = mc["anchors"].get(m, Vector2(0.5, 0.5))
+			mouths[m] = piece(kit, "mouth_" + m, head, Vector2(0, mc["y"]), tex.get_height() * float(mc["px"]), an)
 		elif _has(kit, "mouth_" + m):
 			mouths[m] = piece(kit, "mouth_" + m, head, Vector2(0, mc["y"]), mc["h"])
 		else:

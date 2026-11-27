@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 from scipy import ndimage
 
 
-def key_alpha(rgb: np.ndarray, key: str) -> np.ndarray:
+def key_alpha(rgb: np.ndarray, key: str, lo: float = 0.12, span: float = 0.30) -> np.ndarray:
     r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
     if key == 'magenta':
         k = np.minimum(r, b) - g            # how much more magenta than not
@@ -29,7 +29,7 @@ def key_alpha(rgb: np.ndarray, key: str) -> np.ndarray:
         k = g - np.maximum(r, b)            # how much greener than red or blue
     k = k / 255.0
     # fully solid below 0.12, fully gone above 0.42, smooth in between
-    a = 1.0 - np.clip((k - 0.12) / 0.30, 0.0, 1.0)
+    a = 1.0 - np.clip((k - lo) / span, 0.0, 1.0)
     return a
 
 
@@ -54,12 +54,18 @@ def main() -> None:
     ap.add_argument('--key', default='green', choices=['green', 'magenta'])
     ap.add_argument('--names', default='')
     ap.add_argument('--min-area', type=float, default=0.0015, help='fraction of the sheet; smaller blobs are dropped')
+    ap.add_argument('--strict', action='store_true', help='key only near-pure background (sheets with purple or pink pieces)')
     args = ap.parse_args()
 
     img = Image.open(args.sheet).convert('RGB')
     rgb = np.asarray(img).astype(np.float32)
-    alpha = key_alpha(rgb, args.key)
-    rgb = despill(rgb, args.key)
+    alpha = key_alpha(rgb, args.key, *((0.5, 0.2) if args.strict else ()))
+    if args.strict:
+        # purple pieces stay purple: only the soft rim loses its spill
+        rim = ndimage.binary_dilation(alpha < 0.98, iterations=2)[..., None]
+        rgb = np.where(rim, despill(rgb, args.key), rgb)
+    else:
+        rgb = despill(rgb, args.key)
 
     # separate pieces: label the solid areas, bridging hairline gaps inside a piece
     solid = alpha > 0.5
