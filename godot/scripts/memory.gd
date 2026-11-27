@@ -89,30 +89,30 @@ class Card extends Node2D:
 		h = ch
 		var s := w / 360.0
 		shade = Sprite2D.new()
-		shade.texture = load("res://art/glow.svg")
+		shade.texture = World.tex("glow")
 		shade.modulate = Color(0.2, 0.1, 0.4, 0.0)
 		shade.scale = Vector2(w / 160.0, h / 900.0)
 		shade.position = Vector2(0, h * 0.5)
 		add_child(shade)
 		glow = Sprite2D.new()
-		glow.texture = load("res://art/memory_glow.svg")
+		glow.texture = World.tex("memory_glow")
 		glow.scale = Vector2.ONE * s
 		glow.modulate.a = 0.0
 		add_child(glow)
 		content = Node2D.new()
 		add_child(content)
 		back = Sprite2D.new()
-		back.texture = load("res://art/memory_back.svg")
+		back.texture = World.tex("memory_back")
 		back.scale = Vector2.ONE * s
 		content.add_child(back)
 		face = Node2D.new()
 		content.add_child(face)
 		var f := Sprite2D.new()
-		f.texture = load("res://art/memory_face.svg")
+		f.texture = World.tex("memory_face")
 		f.scale = Vector2.ONE * s
 		face.add_child(f)
 		var win := Sprite2D.new()
-		win.texture = load("res://art/memory_window.svg")
+		win.texture = World.tex("memory_window")
 		win.scale = Vector2.ONE * s
 		win.modulate = Color(PASTEL.get(sp, "#ffffff"))
 		face.add_child(win)

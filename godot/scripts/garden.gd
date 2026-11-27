@@ -86,7 +86,7 @@ class Bed extends Node2D:
 
 	func _spr(name: String, parent: Node, pos := Vector2.ZERO, scl := 1.0, off := Vector2.ZERO) -> Sprite2D:
 		var s := Sprite2D.new()
-		s.texture = load("res://art/%s.svg" % name)
+		s.texture = World.tex(name)
 		s.position = pos
 		s.scale = Vector2.ONE * scl
 		s.offset = off
@@ -211,20 +211,20 @@ class Visitor extends Node2D:
 		r = size_px * 0.9
 		if bee:
 			body = Sprite2D.new()
-			body.texture = load("res://art/garden_bee.svg")
+			body.texture = World.tex("garden_bee")
 			body.scale = Vector2.ONE * size_px / 220.0
 			add_child(body)
 		else:
 			for side in [-1, 1]:
 				var wg := Sprite2D.new()
-				wg.texture = load("res://art/butterfly_wing.svg")
+				wg.texture = World.tex("butterfly_wing")
 				wg.offset = Vector2(100, -10)
 				wg.modulate = col
 				wg.scale = Vector2(side, 1) * size_px / 520.0
 				add_child(wg)
 				wings.append(wg)
 			body = Sprite2D.new()
-			body.texture = load("res://art/glow.svg")
+			body.texture = World.tex("glow")
 			body.modulate = Color("#4a3b52")
 			body.scale = Vector2(0.04, 0.13) * size_px / 70.0
 			add_child(body)
@@ -248,26 +248,26 @@ func _face(parent: Node2D, sc: float, eye_y: float, mouth_y: float) -> Dictionar
 	var f := {}
 	for side in [-1, 1]:
 		var e := Sprite2D.new()
-		e.texture = load("res://art/eye.svg")
+		e.texture = World.tex("eye")
 		e.position = Vector2(side * 70, eye_y) * sc
 		e.scale = Vector2.ONE * 0.24 * sc
 		parent.add_child(e)
 		f["eye%d" % side] = e
 		var hp := Sprite2D.new()
-		hp.texture = load("res://art/eye_happy.svg")
+		hp.texture = World.tex("eye_happy")
 		hp.position = e.position
 		hp.scale = e.scale
 		hp.visible = false
 		parent.add_child(hp)
 		f["happy%d" % side] = hp
 		var ck := Sprite2D.new()
-		ck.texture = load("res://art/cheek.svg")
+		ck.texture = World.tex("cheek")
 		ck.position = Vector2(side * 110, eye_y + 60) * sc
 		ck.scale = Vector2.ONE * 0.26 * sc
 		parent.add_child(ck)
 	for k in ["smile", "grin", "o"]:
 		var m := Sprite2D.new()
-		m.texture = load("res://art/mouth_%s.svg" % k)
+		m.texture = World.tex("mouth_%s" % k)
 		m.position = Vector2(0, mouth_y) * sc
 		m.scale = Vector2.ONE * 0.36 * sc
 		m.visible = k == "smile"
@@ -289,7 +289,7 @@ func _build_sun() -> void:
 	sun_node.z_index = 3
 	add_child(sun_node)
 	var body := Sprite2D.new()
-	body.texture = load("res://art/garden_sun.svg")
+	body.texture = World.tex("garden_sun")
 	body.scale = Vector2.ONE * size.y * 0.27 / 512.0
 	sun_node.add_child(body)
 	sun_node.set_meta("body", body)
@@ -305,7 +305,7 @@ func _build_cloud() -> void:
 	cloud.z_index = 4
 	add_child(cloud)
 	var body := Sprite2D.new()
-	body.texture = load("res://art/cloud.svg")
+	body.texture = World.tex("cloud")
 	body.scale = Vector2(1.0, 0.92) * size.y / 1080.0
 	cloud.add_child(body)
 	cloud.set_meta("body", body)
@@ -358,7 +358,7 @@ func new_garden(first := false) -> void:
 
 func _dirt(pos: Vector2) -> void:
 	var p := CPUParticles2D.new()
-	p.texture = load("res://art/glow.svg")
+	p.texture = World.tex("glow")
 	p.position = pos + Vector2(0, -10)
 	p.amount = 16
 	p.lifetime = 0.7
@@ -380,7 +380,7 @@ func _dirt(pos: Vector2) -> void:
 ## Water drops pouring from `pos`, falling about `fall` pixels.
 func _drops(pos: Vector2, spread_w: float, amount: int, secs: float, fall: float) -> CPUParticles2D:
 	var p := CPUParticles2D.new()
-	p.texture = load("res://art/glow.svg")
+	p.texture = World.tex("glow")
 	p.position = pos
 	p.amount = amount
 	p.lifetime = clampf(sqrt(2.0 * fall / 2200.0), 0.3, 1.2)
@@ -466,7 +466,7 @@ func _plant(b: Bed) -> void:
 func _water(b: Bed) -> void:
 	b.busy = true
 	var can := Sprite2D.new()
-	can.texture = load("res://art/garden_can.svg")
+	can.texture = World.tex("garden_can")
 	var cs := b.w * 0.75 / 512.0
 	can.scale = Vector2.ONE * cs
 	var top := b.head_global()
@@ -579,7 +579,7 @@ func _bunny() -> void:
 	if complete:
 		return
 	var carrot := Sprite2D.new()
-	carrot.texture = load("res://art/food_carrot.svg")
+	carrot.texture = World.tex("food_carrot")
 	var spot := Vector2(size.x * 0.22, size.y * 0.975)
 	carrot.position = spot
 	carrot.scale = Vector2.ZERO
@@ -627,7 +627,7 @@ func _frog() -> void:
 		return
 	if puddle == null:
 		puddle = Sprite2D.new()
-		puddle.texture = load("res://art/garden_puddle.svg")
+		puddle.texture = World.tex("garden_puddle")
 		puddle.z_index = 3
 		add_child(puddle)
 	puddle.position = Vector2(size.x * 0.58, size.y * 0.965)
@@ -694,7 +694,7 @@ func _complete() -> void:
 func _bouquet() -> void:
 	var at := Vector2(size.x * 0.55, size.y * 0.56)
 	var wrap := Sprite2D.new()
-	wrap.texture = load("res://art/garden_wrap.svg")
+	wrap.texture = World.tex("garden_wrap")
 	var ws := size.y * 0.3 / 512.0
 	wrap.scale = Vector2.ZERO
 	wrap.position = at + Vector2(0, size.y * 0.1)

@@ -88,7 +88,7 @@ func _sign(parent: Node2D, text: String, pos: Vector2, col: Color, id: String) -
 	var lv := Game.level_of(id)
 	for k in 4:
 		var st := Sprite2D.new()
-		st.texture = load("res://art/star5.svg")
+		st.texture = World.tex("star5")
 		st.scale = Vector2(0.11, 0.11)
 		st.position = pos + Vector2((1.5 - k) * 32.0, 86)
 		st.modulate = Color("#ffcf2a") if k < lv else Color(1, 1, 1, 0.75)
@@ -146,14 +146,14 @@ class PortalArt extends Node2D:
 	var glow: Sprite2D
 	func setup(id: String, h: float) -> void:
 		glow = Sprite2D.new()
-		glow.texture = load("res://art/glow.svg")
+		glow.texture = World.tex("glow")
 		glow.scale = Vector2.ONE * h / 160.0
 		glow.position = Vector2(0, -h * 0.5)
 		glow.modulate = Color(1, 0.96, 0.8, 0.45)
 		add_child(glow)
 		spr = Sprite2D.new()
 		var path := "res://art/%s_portal.svg" % id
-		spr.texture = load(path) if ResourceLoader.exists(path) else load("res://art/star5.svg")
+		spr.texture = load(path) if ResourceLoader.exists(path) else World.tex("star5")
 		var k := h / 512.0
 		spr.scale = Vector2(k, k)
 		spr.offset = Vector2(0, -256)
@@ -171,7 +171,7 @@ class BalloonBunch extends Node2D:
 	const SPOTS := [Vector2(-120, -330), Vector2(0, -400), Vector2(120, -340), Vector2(-60, -230), Vector2(70, -240), Vector2(-180, -210)]
 	func _ready() -> void:
 		var glow := Sprite2D.new()
-		glow.texture = load("res://art/glow.svg")
+		glow.texture = World.tex("glow")
 		glow.scale = Vector2(2.6, 2.6)
 		glow.position = Vector2(0, -300)
 		glow.modulate = Color(1, 0.95, 0.8, 0.5)
@@ -179,7 +179,7 @@ class BalloonBunch extends Node2D:
 		add_child(glow)
 		for i in SPOTS.size():
 			var b := Sprite2D.new()
-			b.texture = load("res://art/balloon.svg")
+			b.texture = World.tex("balloon")
 			b.modulate = Color(COLS[i])
 			b.scale = Vector2(0.34, 0.34)
 			b.position = SPOTS[i]

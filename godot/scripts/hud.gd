@@ -62,7 +62,7 @@ func _input(event: InputEvent) -> void:
 ## A star flies from `from` to the counter, which pops when it lands.
 func fly_star(from: Vector2) -> void:
 	var s := Sprite2D.new()
-	s.texture = load("res://art/star5.svg")
+	s.texture = World.tex("star5")
 	s.modulate = Color("#ffd23d")
 	s.scale = Vector2(0.35, 0.35)
 	s.position = from
@@ -141,6 +141,6 @@ func _draw_hud() -> void:
 	# star counter
 	var sc := _star_pos()
 	dn.draw_rect(Rect2(sc + Vector2(-r * 1.25, -r * 0.62), Vector2(r * 3.3, r * 1.24)), Color(1, 1, 1, 0.7))
-	var st: Texture2D = load("res://art/star5.svg")
+	var st: Texture2D = World.tex("star5")
 	var ss := r * 1.05 * star_pop
 	dn.draw_texture_rect(st, Rect2(sc + Vector2(-r * 0.75 - ss / 2, -ss / 2), Vector2(ss, ss)), false, Color("#ffcf2a"))

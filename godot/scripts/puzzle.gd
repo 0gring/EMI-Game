@@ -81,7 +81,7 @@ func build() -> void:
 	slot_lines.z_index = 7
 	add_child(slot_lines)
 	hint = Sprite2D.new()
-	hint.texture = load("res://art/glow.svg")
+	hint.texture = World.tex("glow")
 	hint.modulate = Color(1, 0.95, 0.6, 0.0)
 	hint.z_index = 7
 	add_child(hint)
@@ -204,7 +204,7 @@ func _paint_picture() -> void:
 		# a night picture gets stars and a moon instead of a sun
 		for i in 26:
 			var s := Sprite2D.new()
-			s.texture = load("res://art/star4.svg")
+			s.texture = World.tex("star4")
 			s.position = Vector2(randf() * board.size.x, randf_range(0.02, 0.4) * board.size.y)
 			s.scale = Vector2.ONE * randf_range(0.04, 0.1)
 			s.modulate = Color(1, 1, 0.85, randf_range(0.6, 1.0))

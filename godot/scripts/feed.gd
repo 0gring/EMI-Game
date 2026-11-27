@@ -149,7 +149,7 @@ func _lay_food() -> void:
 	var rh := size.y * 0.4 / rows
 	for i in n:
 		var f := Sprite2D.new()
-		f.texture = load("res://art/food_%s.svg" % food)
+		f.texture = World.tex("food_%s" % food)
 		var r := i / cols
 		var c := i % cols
 		var in_row := mini(cols, n - r * cols)
@@ -165,7 +165,7 @@ func _lay_food() -> void:
 		tw.tween_property(f, "scale", Vector2.ONE * float(f.get_meta("base")), 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	for i in want:
 		var p := Sprite2D.new()
-		p.texture = load("res://art/plate.svg")
+		p.texture = World.tex("plate")
 		p.scale = Vector2.ONE * 0.2
 		p.z_index = 11
 		add_child(p)
@@ -275,7 +275,7 @@ func _eat(n: int) -> void:
 	Game.note("xylophone", ["C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6", "D6", "E6"][n - 1], 0.6)
 	var pl := plates[n - 1]
 	var plate_food := Sprite2D.new()
-	plate_food.texture = load("res://art/food_%s.svg" % food)
+	plate_food.texture = World.tex("food_%s" % food)
 	plate_food.scale = Vector2.ZERO
 	pl.add_child(plate_food)
 	var tw := plate_food.create_tween()

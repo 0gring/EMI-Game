@@ -113,7 +113,7 @@ func build() -> void:
 	cake_root.z_index = 7
 	add_child(cake_root)
 	stand = Sprite2D.new()
-	stand.texture = load("res://art/cake_stand.svg")
+	stand.texture = World.tex("cake_stand")
 	stand.centered = false
 	add_child(stand)
 	stand.z_index = 7
@@ -245,11 +245,11 @@ func _build_buttons() -> void:
 func _icon(node: Node2D, it: Dictionary, r: float) -> void:
 	if it["kind"] == "icing":
 		var bowl := Sprite2D.new()
-		bowl.texture = load("res://art/cake_bowl.svg")
+		bowl.texture = World.tex("cake_bowl")
 		bowl.scale = Vector2.ONE * r * 2.3 / 512.0
 		bowl.position = Vector2(0, -r * 0.1)
 		var cream := Sprite2D.new()
-		cream.texture = load("res://art/cake_cream.svg")
+		cream.texture = World.tex("cake_cream")
 		cream.modulate = it["tint"]
 		cream.scale = Vector2.ONE * r * 1.7 / 512.0
 		cream.position = Vector2(0, -r * 0.55)
@@ -257,7 +257,7 @@ func _icon(node: Node2D, it: Dictionary, r: float) -> void:
 		node.add_child(bowl)
 		return
 	var s := Sprite2D.new()
-	s.texture = load("res://art/%s.svg" % it["tex"])
+	s.texture = World.tex(it["tex"])
 	s.modulate = it["tint"]
 	s.scale = Vector2.ONE * r * 1.75 / 512.0 * float(it["scale"])
 	node.add_child(s)
@@ -300,7 +300,7 @@ func _add_tier(i: int) -> void:
 	cake_root.add_child(node)
 	var mk := func(tex: String, col: Color) -> Sprite2D:
 		var s := Sprite2D.new()
-		s.texture = load("res://art/%s.svg" % tex)
+		s.texture = World.tex(tex)
 		s.centered = false
 		s.position = Vector2(-256.0 * g["sx"], -300.0 * g["sy"])
 		s.scale = Vector2(g["sx"], g["sy"])
@@ -358,13 +358,13 @@ func _pick_icing(ic: Dictionary) -> void:
 	bowl.z_index = 9
 	var bs := W * 0.5 / 512.0
 	var cream := Sprite2D.new()
-	cream.texture = load("res://art/cake_cream.svg")
+	cream.texture = World.tex("cake_cream")
 	cream.modulate = icing
 	cream.scale = Vector2.ONE * bs * 0.8
 	cream.position = Vector2(0, -60)
 	bowl.add_child(cream)
 	var b := Sprite2D.new()
-	b.texture = load("res://art/cake_bowl.svg")
+	b.texture = World.tex("cake_bowl")
 	b.scale = Vector2.ONE * bs
 	bowl.add_child(b)
 	bowl.position = cake_root.position + Vector2(W * 0.35, top["top"] - W * 0.55 - size.y * 0.5)
@@ -440,7 +440,7 @@ func _place(tp: Dictionary, from: Vector2, target: Dictionary) -> void:
 	spots.erase(target)
 	var t: Dictionary = tiers[target["tier"]]
 	var s := Sprite2D.new()
-	s.texture = load("res://art/%s.svg" % tp["tex"])
+	s.texture = World.tex(tp["tex"])
 	var final := Vector2.ONE * W * 0.16 / 512.0 * 2.0 * float(tp["size"])
 	s.scale = final * 1.3
 	s.z_index = 9
@@ -469,7 +469,7 @@ func _place(tp: Dictionary, from: Vector2, target: Dictionary) -> void:
 
 func _shake() -> void:
 	var shaker := Sprite2D.new()
-	shaker.texture = load("res://art/cake_shaker.svg")
+	shaker.texture = World.tex("cake_shaker")
 	shaker.scale = Vector2.ONE * W * 0.35 / 512.0
 	shaker.z_index = 9
 	var top: Dictionary = tiers[tiers.size() - 1]
@@ -492,7 +492,7 @@ func _sprinkle_burst() -> void:
 	for k in 6:
 		var t: Dictionary = tiers[randi() % tiers.size()]
 		var s := Sprite2D.new()
-		s.texture = load("res://art/cake_sprinkle.svg")
+		s.texture = World.tex("cake_sprinkle")
 		s.modulate = Color(SPRINKLE_COLS.pick_random())
 		s.scale = Vector2.ONE * W * 0.05 / 256.0 * 2.0
 		s.rotation = randf() * TAU
@@ -548,19 +548,19 @@ func _light_candles() -> void:
 		top["node"].add_child(node)
 		var cs := W * 0.3 / 512.0
 		var candle := Sprite2D.new()
-		candle.texture = load("res://art/cake_candle.svg")
+		candle.texture = World.tex("cake_candle")
 		candle.modulate = Color(CANDLE_COLS[i]).lightened(0.4)
 		candle.scale = Vector2(cs, cs)
 		candle.offset = Vector2(0, -215)
 		node.add_child(candle)
 		var glow := Sprite2D.new()
-		glow.texture = load("res://art/glow.svg")
+		glow.texture = World.tex("glow")
 		glow.modulate = Color(1, 0.85, 0.4, 0.0)
 		glow.scale = Vector2.ONE * cs * 3.2
 		glow.position = Vector2(0, -400.0 * cs)
 		node.add_child(glow)
 		var flame := Sprite2D.new()
-		flame.texture = load("res://art/cake_flame.svg")
+		flame.texture = World.tex("cake_flame")
 		flame.scale = Vector2.ZERO
 		flame.position = Vector2(0, -395.0 * cs)
 		flame.offset = Vector2(0, -150)
@@ -614,7 +614,7 @@ func _blow(c: Dictionary) -> void:
 func _smoke(p: Vector2) -> void:
 	for k in 5:
 		var s := Sprite2D.new()
-		s.texture = load("res://art/glow.svg")
+		s.texture = World.tex("glow")
 		s.modulate = Color(0.85, 0.85, 0.92, 0.75)
 		s.scale = Vector2.ONE * 0.12
 		s.position = p
@@ -693,7 +693,7 @@ func _down(idx: int, p: Vector2) -> void:
 				"top":
 					if state == "decorate":
 						var ghost := Sprite2D.new()
-						ghost.texture = load("res://art/%s.svg" % b["data"]["tex"])
+						ghost.texture = World.tex(b["data"]["tex"])
 						ghost.scale = Vector2.ONE * W * 0.13 / 512.0 * 2.6 * float(b["data"]["size"])
 						ghost.position = p + Vector2(0, -40)
 						ghost.z_index = 15

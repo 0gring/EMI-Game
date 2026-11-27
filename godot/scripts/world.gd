@@ -17,7 +17,12 @@ var flies: Array = []
 var motes: Array = []
 var t := 0.0
 
+## Drawn art by name, or its painted replacement (art/p, see tools/make_props.py)
+## when there is one: same canvas, so callers keep their scales and offsets.
 static func tex(name: String) -> Texture2D:
+	var p := "res://art/p/%s.png" % name
+	if ResourceLoader.exists(p):
+		return load(p)
 	return load("res://art/%s.svg" % name)
 
 func setup(mood := {}, keep_clear: Array[Rect2] = [], density := 1.0) -> void:
@@ -83,7 +88,7 @@ func setup(mood := {}, keep_clear: Array[Rect2] = [], density := 1.0) -> void:
 		var pos := Vector2(p.x * size.x, hy + p.y * size.y + 40)
 		if _blocked(pos, keep_clear):
 			continue
-		var tr := _swayer("tree", pos, 0.55 + p.y * 3.0, 3.0, 0.9)
+		var tr := _swayer("tree_blossom" if painted and i % 2 == 1 else "tree", pos, 0.55 + p.y * 3.0, 3.0, 0.9)
 		tr.offset = Vector2(0, -210)
 	for i in int(7 * density):
 		var pos := Vector2(rng.randf_range(0.02, 0.98) * size.x, hy + rng.randf_range(0.1, 0.2) * size.y)
@@ -91,14 +96,33 @@ func setup(mood := {}, keep_clear: Array[Rect2] = [], density := 1.0) -> void:
 			continue
 		var b := _swayer("bush", pos, rng.randf_range(0.32, 0.45), 2.0, 1.2)
 		b.offset = Vector2(0, -150)
+	# the near meadow: long grass and wildflowers along the bottom
+	if painted and ResourceLoader.exists("res://art/bg/meadow.png"):
+		var mead := Sprite2D.new()
+		mead.texture = load("res://art/bg/meadow.png")
+		mead.centered = false
+		var ms := maxf(size.x / mead.texture.get_width(), size.y * 0.36 / mead.texture.get_height())
+		mead.scale = Vector2(ms, ms)
+		mead.position = Vector2((size.x - mead.texture.get_width() * ms) / 2.0, size.y - mead.texture.get_height() * ms)
+		add_child(mead)
+	if painted:
+		# painted clumps of flowers, mushrooms and a mossy rock along the meadow
+		var deco := [["clump_a", 0.3], ["shroom_red", 0.32], ["clump_b", 0.3], ["rock", 0.32], ["shroom_brown", 0.28], ["clump_a", 0.26], ["clump_b", 0.28]]
+		var dx := [0.04, 0.13, 0.27, 0.93, 0.83, 0.62, 0.45]
+		for i in int(deco.size() * density):
+			var pos := Vector2(dx[i] * size.x, hy + rng.randf_range(0.22, 0.4) * size.y)
+			if _blocked(pos, keep_clear):
+				continue
+			var d := _swayer(deco[i][0], pos, deco[i][1] * (0.7 + (pos.y - hy) / size.y), 2.0 if deco[i][0].begins_with("clump") else 0.0, 1.5)
+			d.offset = Vector2(0, -256 if d.texture.get_height() > 300 else -128)
 	var fl := ["flower_pink", "flower_yellow", "flower_white", "flower_blue"]
-	for i in int(34 * density):
+	for i in int((0 if painted else 34) * density):
 		var pos := Vector2(rng.randf() * size.x, hy + rng.randf_range(0.17, 0.46) * size.y)
 		if _blocked(pos, keep_clear):
 			continue
 		var f := _swayer(fl[i % fl.size()], pos, rng.randf_range(0.28, 0.42) * (0.6 + (pos.y - hy) / size.y), 7.0, 2.0)
 		f.offset = Vector2(0, -100)
-	for i in int(26 * density):
+	for i in int((0 if painted else 26) * density):
 		var pos := Vector2(rng.randf() * size.x, size.y - rng.randf_range(0.0, 0.09) * size.y)
 		var g := _swayer("grass", pos, rng.randf_range(0.6, 0.9), 9.0, 2.2)
 		g.offset = Vector2(0, -100)

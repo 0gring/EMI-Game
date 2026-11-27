@@ -80,7 +80,7 @@ func _ready() -> void:
 	build()
 
 func tex(name: String) -> Texture2D:
-	return load("res://art/%s.svg" % name)
+	return World.tex(name)
 
 func spr(name: String, parent: Node, pos: Vector2, scl: float, col := Color.WHITE, z := 0) -> Sprite2D:
 	var s := Sprite2D.new()

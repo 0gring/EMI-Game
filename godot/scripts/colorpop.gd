@@ -112,7 +112,7 @@ class Balloon extends Node2D:
 		col = c
 		r = radius
 		body = Sprite2D.new()
-		body.texture = load("res://art/balloon.svg")
+		body.texture = World.tex("balloon")
 		body.modulate = Color(c["c"]) if not rainbow else Color.WHITE
 		body.scale = Vector2.ONE * r / 190.0
 		add_child(body)
@@ -123,26 +123,26 @@ class Balloon extends Node2D:
 		var fs := r / 190.0
 		for side in [-1, 1]:
 			var e := Sprite2D.new()
-			e.texture = load("res://art/eye.svg")
+			e.texture = World.tex("eye")
 			e.position = Vector2(side * 52, -40) * fs
 			e.scale = Vector2.ONE * 0.2 * fs
 			add_child(e)
 			eyes.append(e)
 			var h := Sprite2D.new()
-			h.texture = load("res://art/eye_happy.svg")
+			h.texture = World.tex("eye_happy")
 			h.position = e.position
 			h.scale = e.scale
 			h.visible = false
 			add_child(h)
 			happy.append(h)
 			var ck := Sprite2D.new()
-			ck.texture = load("res://art/cheek.svg")
+			ck.texture = World.tex("cheek")
 			ck.position = Vector2(side * 95, 20) * fs
 			ck.scale = Vector2.ONE * 0.22 * fs
 			add_child(ck)
 		for k in ["smile", "open", "o", "tongue", "grin"]:
 			var m := Sprite2D.new()
-			m.texture = load("res://art/mouth_%s.svg" % k)
+			m.texture = World.tex("mouth_%s" % k)
 			m.position = Vector2(0, 40) * fs
 			m.scale = Vector2.ONE * 0.28 * fs
 			m.visible = k == "smile"
@@ -150,7 +150,7 @@ class Balloon extends Node2D:
 			mouths[k] = m
 		if present:
 			box = Sprite2D.new()
-			box.texture = load("res://art/present.svg")
+			box.texture = World.tex("present")
 			box.scale = Vector2.ONE * 0.22 * fs
 			box.position = Vector2(0, 330) * fs
 			add_child(box)
@@ -354,7 +354,7 @@ func _rainbow_pop(b: Balloon) -> void:
 
 func _present(pos: Vector2) -> void:
 	var box := Sprite2D.new()
-	box.texture = load("res://art/present.svg")
+	box.texture = World.tex("present")
 	box.scale = Vector2(0.3, 0.3)
 	box.position = pos
 	box.z_index = 9
@@ -476,7 +476,7 @@ func _draw_banner() -> void:
 	sb.shadow_size = 12
 	sb.shadow_offset = Vector2(0, 8)
 	banner_node.draw_style_box(sb, rect)
-	var bal: Texture2D = load("res://art/balloon.svg")
+	var bal: Texture2D = World.tex("balloon")
 	var bs := 120.0
 	var bc := Vector2(rect.end.x - 80, c.y + sin(Time.get_ticks_msec() / 400.0) * 6.0)
 	banner_node.draw_texture_rect(bal, Rect2(bc - Vector2(bs, bs) / 2, Vector2(bs, bs)), false, Color(target["c"]))
