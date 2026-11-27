@@ -93,7 +93,7 @@ const KITS := {
 	"cat": {
 		"kit": "cat",
 		"head_h": 600,
-		"ears": {"x": 165, "y": -195, "h": 270, "anchor": Vector2(0.5, 0.92), "rot": 0.25},
+		"ears": {"x": 180, "y": -150, "h": 290, "anchor": Vector2(0.5, 0.92), "rot": 0.25, "tilt": -0.12},
 		"tail": {"pos": Vector2(140, -150), "h": 150, "anchor": Vector2(0.04, 0.35)},
 		# eyes laid over the closed ones painted on the head
 		"eyes": {"x": 136, "y": -116, "h": 150, "happy_h": 70, "happy_y": -120},

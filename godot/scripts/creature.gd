@@ -439,6 +439,9 @@ func _pose(dt: float) -> void:
 	ear_r_v = r.y
 	var sp: Dictionary = SPECIES.get(species, {})
 	var base := 0.35 if sp.get("ears", "") != "floppy" else 0.1
+	# painted ears that are already drawn leaning out set their own lean
+	if Painted.KITS.has(species) and Painted.KITS[species].get("ears", {}).has("tilt"):
+		base = Painted.KITS[species]["ears"]["tilt"]
 	if parts.has("ear_l"):
 		parts["ear_l"].rotation = -base + ear_l
 	if parts.has("ear_r"):
